@@ -1,0 +1,42 @@
+{
+    "response": {
+        "action": "user/get_info",
+        "current_api_version": "1.1",
+        "new_key": "yes",
+        "result": "Success",
+        "user_info": {
+            "bandwidth": "1073741823360",
+            "base_storage": "1073741824000",
+            "birth_date": "",
+            "bonus_storage": "2147483648",
+            "created": "2014-01-01",
+            "display_name": "John Doe",
+            "ekey": "123456789012345678901234567890",
+            "email": "nobody@example.com",
+            "facebook": {
+                "linked": "no"
+            },
+            "first_name": "John",
+            "gender": "Prefer not to answer",
+            "gmail": {
+                "linked": "no"
+            },
+            "last_name": "Doe",
+            "location": "",
+            "max_instant_upload_size": "4294967295",
+            "max_upload_size": "21474836580",
+            "one_time_key_request_max_count": "100",
+            "options": "256",
+            "premium": "yes",
+            "storage_limit": "1075889307648",
+            "storage_limit_exceeded": "no",
+            "tos_accepted": "1.4",
+            "twitter": {
+                "linked": "no"
+            },
+            "used_storage_size": "100",
+            "validated": "yes",
+            "website": ""
+        }
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "response": {
+        "action": "user/renew_session_token",
+        "current_api_version": "1.1",
+        "new_key": "yes",
+        "result": "Success",
+        "session_token": "123456"
+    }
+}
