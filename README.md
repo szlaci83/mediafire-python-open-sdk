@@ -163,3 +163,13 @@ Run it with:
 
     cd python-mediafire-sdk
     PYTHONPATH=. python3 -munittest
+
+
+ABOUT AND LICENSE
+Copyright (c) 2012-2013, Roman Yepishev. All right reserved. Website : rtg.in.au
+
+This project was forked by MediaFire with explicit permission from Roman Yepishev on 10.24.2014
+
+This project is made under BSD license. See LICENSE file for more information.
+
+MediaFire® is a registered trademark of the MediaFire, LLC.
