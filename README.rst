@@ -1,18 +1,24 @@
-Python MediaFire Client
-=======================
+**************************
+MediaFire: Python Open SDK
+**************************
 
-Implements MediaFire Core API: http://www.mediafire.com/developers/core_api/
 
-This is a work in progress. Expect breaking changes.
+Python implementation of `MediaFire Core API`_.
 
+.. _MediaFire Core Api: http://www.mediafire.com/developers/core_api/
+
+This is a work in progress. Expect breaking changes in the high-level client.
+
+==================
 API Client library
-------------------
+==================
 
 API Client library provides a low-level interface to MediaFire API. It handles
-requests, signatures and errors. Uses python-requests and requests_toolbelt for streaming uploads and does not require the whole file to
-be loaded in memory.
+requests, signatures and errors. Uses python-requests for streaming uploads and does not require the whole file to be loaded in memory.
 
 Usage:
+
+.. code-block:: python
 
     from mediafire.api import MediaFireApi
 
@@ -24,7 +30,7 @@ Usage:
 
     api.set_session_token(session_result)
 
-    response = client.user_get_info()
+    response = api.user_get_info()
     print(response['user_info']['display_name'])
 
     # Or directly for methods that are not yet wrapped
@@ -39,28 +45,28 @@ Usage:
 API Client library supports operation w/o session_token. In this case all
 operations that do require session_token will fail with Access denied error.
 
+==================
 High-level library
-------------------
+==================
 
 High-level client library wraps API calls and presents simplified interface.
 
-At the moment it supports:
+Supported operations:
 
- * Upload (instant, simple, and resumable, can use action tokens)
- * Download (direct download link)
- * Listing directories
- * Creating directories
- * Removing files and directories
- * Getting info about files and directories
+* Upload (instant, simple, and resumable, can use action tokens)
+* Download (direct download link)
+* Listing directories
+* Creating directories
+* Removing files and directories
+* Getting info about files and directories
 
 MediaFire resources can be referenced by path or by quickkey/folderkey.
 
-* path: mf:/Pictures/Sample.jpg or /Pictures/Sample.jpg
-* folder_key: mf:6302u1a9p0a9x (folder_key is 13 chars long)
-* quick_key: mf:46d3y4p8542kiyp (quick_key is 15 chars long)
+* **path**: ``mf:/Pictures/Sample.jpg`` or ``/Pictures/Sample.jpg``
+* **folder_key**: ``mf:6302u1a9p0a9x`` (``folder_key`` is 13 chars long)
+* **quick_key**: ``mf:46d3y4p8542kiyp`` (``quick_key`` is 15 chars long)
 
-examples/mediafire-cli.py is currently the only example of high level
-client usage. Here's how to start:
+.. code-block:: python
 
     from mediafire.client import (MediaFireClient, File, Folder)
 
@@ -73,13 +79,13 @@ client usage. Here's how to start:
     client.download_file("mf:/Pictures/flower.jpg",
                          "flower-from-mediafire.jpg")
 
-    contents = client.get_folder_contents_iter("mf:/Pictures")
-    for item in contents:
+    for item in client.get_folder_contents_iter("mf:/Pictures"):
         if type(item) is File:
             print("File: {}".format(item['filename']))
         elif type(item) is Folder:
             print("Folder: {}".format(item['foldername']))
 
+See ``examples/mediafire-cli.py`` for high-level client usage.
 
 CLI Interface
 -------------
@@ -87,6 +93,8 @@ CLI Interface
 Work in progress. Can be used for basic tasks, such as directory listing,
 uploads, downloads, getting resource information and removing files and folders
 from the command line.
+
+.. code-block:: text
 
 
         usage: mediafire-cli [-h] [--debug] [--email EMAIL] [--password PASSWORD]
@@ -134,10 +142,14 @@ I highly suggest installing it per-user or a virtualenv and avoid installing thi
 
 Clone it:
 
-    $ git clone https://github.com/roman-yepishev/python-mediafire-sdk.git
+.. code-block:: bash
+
+    $ git clone https://github.com/MediaFire/mediafire-python-open-sdk.git
     $ cd python-mediafire-sdk
 
-For user installation, follow https://pip.pypa.io/en/latest/installing.html to get `get-pip.py`, then:
+For user installation, follow https://pip.pypa.io/en/latest/installing.html to get ``get-pip.py``, then:
+
+.. code-block:: bash
 
     $ PATH=~/.local/bin:$PATH
     $ python3 get-pip.py --user
@@ -148,6 +160,8 @@ For user installation, follow https://pip.pypa.io/en/latest/installing.html to g
 
 When in virtualenv, run this:
 
+.. code-block:: bash
+
     $ pip3 install -r requirements.txt
     $ python3 setup.py build install
 
@@ -157,16 +171,20 @@ When in virtualenv, run this:
 Tests
 -----
 
-Basic test suite is located under tests/
+Basic test suite is located under ``tests/``
 
 Run it with:
 
-    cd python-mediafire-sdk
+.. code-block:: bash
+
+    cd mediafire-python-open-sdk
     PYTHONPATH=. python3 -munittest
 
+=================
+About and License
+=================
 
-ABOUT AND LICENSE
-Copyright (c) 2012-2013, Roman Yepishev. All right reserved. Website : rtg.in.au
+Copyright (c) 2014, Roman Yepishev. All right reserved. Website : http://rtg.in.ua
 
 This project was forked by MediaFire with explicit permission from Roman Yepishev on 10.24.2014
 

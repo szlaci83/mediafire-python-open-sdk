@@ -10,9 +10,9 @@ setup(
     author='Roman Yepishev',
     author_email='roman.yepishev@gmail.com',
     packages=['mediafire'],
-    url='https://github.com/roman-yepishev/python-mediafire-sdk',
+    url='https://github.com/MediaFire/mediafire-python-open-sdk',
     license='LICENSE.txt',
     description='Python MediaFire client library',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     install_requires=install_requires,
 )
