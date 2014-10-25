@@ -9,7 +9,7 @@ import sys
 
 from pprint import pprint
 
-from mediafire.client import (MediaFireClient, File,
+from mediafire.client import (MediaFireClient,
                               Folder, ResourceNotFoundError)
 
 

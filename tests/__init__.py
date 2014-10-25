@@ -1,1 +1,1 @@
-from tests.api import *
+"""Tests"""

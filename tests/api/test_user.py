@@ -18,8 +18,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
 
     def test_no_app_id_failure(self):
         with self.assertRaises(ValueError):
-            session_token = self.client.user_get_session_token(
-                email='1', password='2')
+            self.client.user_get_session_token(email='1', password='2')
 
     @responses.activate
     def test_signature(self):

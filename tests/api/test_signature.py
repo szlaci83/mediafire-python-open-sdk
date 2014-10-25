@@ -1,4 +1,5 @@
-import os
+"""Signature generation tests"""
+
 import responses
 import unittest
 

@@ -1,7 +1,8 @@
+"""Upload tests"""
+
 import io
 import responses
 import unittest
-import json
 
 from tests.api.base import MediaFireApiTestCaseWithSessionToken
 
@@ -32,7 +33,7 @@ class TestUploadSimple(MediaFireApiTestCaseWithSessionToken):
         file_size = len(fd.read())
         fd.seek(0)
 
-        result = self.client.upload_simple(
+        self.client.upload_simple(
             fd, "тест.bin", file_size=file_size, file_hash='0')
 
         request = responses.calls[0].request
@@ -40,3 +41,6 @@ class TestUploadSimple(MediaFireApiTestCaseWithSessionToken):
         x_filename = request.headers['x-filename']
 
         self.assertEqual(x_filename, "тест.bin".encode('utf-8'))
+
+if __name__ == "__main__":
+    unittest.main()

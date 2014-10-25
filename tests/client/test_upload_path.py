@@ -1,8 +1,6 @@
 import io
 import unittest
 
-import posixpath
-
 from mediafire.client import (MediaFireClient, ResourceNotFoundError,
                               Folder, File, NotAFolderError)
 
@@ -75,7 +73,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ValueError):
-            result = client._prepare_upload(source, dest_uri)
+            client._prepare_upload(source, dest_uri)
 
     def test_upload_target_parent_folder_does_not_exist(self):
         source = '/tmp/k.txt'
@@ -91,7 +89,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ResourceNotFoundError):
-            result = client._prepare_upload(source, dest_uri)
+            client._prepare_upload(source, dest_uri)
 
     def test_upload_target_file_doest_not_exist(self):
         source = '/tmp/l.txt'
@@ -133,7 +131,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(NotAFolderError):
-            result = client._prepare_upload(source, dest_uri)
+            client._prepare_upload(source, dest_uri)
 
     def test_upload_fh_existing_overwrite(self):
         source = io.StringIO("blah")
@@ -174,7 +172,7 @@ class TestUploadPath(unittest.TestCase):
         with self.assertRaises(ValueError):
             client._prepare_upload(source, dest_uri)
 
-    def test_upload_target_parent_folder_does_not_exist(self):
+    def test_upload_fh_target_parent_folder_does_not_exist(self):
         source = io.StringIO("blah")
         dest_uri = 'mf:/h/k.txt'
 
@@ -188,7 +186,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ResourceNotFoundError):
-            result = client._prepare_upload(source, dest_uri)
+            client._prepare_upload(source, dest_uri)
 
 
 if __name__ == '__main__':
