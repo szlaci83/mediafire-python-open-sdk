@@ -64,9 +64,6 @@ class MediaFireApi(object):
         self.http = requests.Session()
         self.http.mount('https://',
                         HTTPAdapter(max_retries=API_ERROR_MAX_RETRIES))
-        # API BUG: MediaFire servers send gzipped content w/o announcing it
-        # http://forum.mediafiredev.com/showthread.php?64
-        self.http.headers.update({'Accept-Encoding': 'identity'})
 
         self._session_token = None
         self._action_tokens = {}
