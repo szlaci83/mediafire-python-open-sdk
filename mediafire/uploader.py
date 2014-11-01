@@ -24,8 +24,7 @@ class UploadInfo(object):
     """Structure containing upload details"""
 
     def __init__(self, fd=None, name=None, folder_key=None, path=None,
-                 hash_=None, size=None, filedrop_key=None,
-                 version_control=None):
+                 hash_=None, size=None, filedrop_key=None):
         self.fd = fd
         self.name = name
         self.folder_key = folder_key
@@ -105,18 +104,22 @@ class MediaFireUploader(object):
     def sha256_digest(fd):
         """Get SHA256 digest of flehandle contents
 
-        fd - file-like object (expects exclusive access)
+        fd - file-like object (expects exclusive access because of seeking)
         """
+        fd.seek(0, os.SEEK_SET)
+
         sha256sum = hashlib.sha256()
         for chunk in iter(lambda: fd.read(8192), b''):
             sha256sum.update(chunk)
+
+        fd.seek(0, os.SEEK_SET)
 
         return sha256sum.hexdigest().lower()
 
     # pylint: disable=too-many-arguments
     def upload(self, fd, name=None, folder_key=None, filedrop_key=None,
                path=None, hash_=None):
-        """Perform upload
+        """Upload file, returns file/get_info response on resulting quickkey
 
         fd -- file-like object to upload from, expects exclusive access
         name -- file name
@@ -126,13 +129,12 @@ class MediaFireUploader(object):
         filedrop_key -- filedrop to use instead of folder_key
         """
 
-        fd.seek(0, os.SEEK_SET)
-
         # Allow supplying stored hash
         if hash_ is None:
             logger.debug("Calculating checksum")
             hash_ = self.sha256_digest(fd)
 
+        # Get file handle content length in the most reliable way
         fd.seek(0, os.SEEK_END)
         size = fd.tell()
         fd.seek(0, os.SEEK_SET)
@@ -141,24 +143,30 @@ class MediaFireUploader(object):
                                  hash_=hash_, size=size, path=path,
                                  filedrop_key=filedrop_key)
 
-        if size > UPLOAD_SIMPLE_LIMIT:
+        # We cannot use resumable upload when uploading to filedrop
+        if size > UPLOAD_SIMPLE_LIMIT and filedrop_key is None:
             resumable = True
         else:
             resumable = False
 
+        quickkey = None
+
         # Check whether file is present
         check_result = self._api.upload_check(
-            filename=upload_info.name, path=upload_info.path,
-            size=upload_info.size, folder_key=upload_info.folder_key,
-            hash_=upload_info.hash_, resumable=resumable)
+            filename=upload_info.name,
+            size=upload_info.size,
+            hash_=upload_info.hash_,
+            folder_key=upload_info.folder_key,
+            filedrop_key=upload_info.filedrop_key,
+            path=upload_info.path,
+            resumable=resumable
+            )
 
-        # We know precisely what folder_key to use, drop path
         folder_key = check_result.get('folder_key', None)
         if folder_key is not None:
+            # We know precisely what folder_key to use, drop path
             upload_info.folder_key = folder_key
             upload_info.path = None
-
-        quickkey = None
 
         if check_result['hash_exists'] == 'yes':
             # file exists somewhere in MediaFire
@@ -223,8 +231,12 @@ class MediaFireUploader(object):
         """
 
         result = self._api.upload_instant(
-            upload_info.name, upload_info.size, upload_info.hash_,
-            path=upload_info.path, folder_key=upload_info.folder_key)
+            upload_info.name,
+            upload_info.size,
+            upload_info.hash_,
+            path=upload_info.path,
+            folder_key=upload_info.folder_key
+        )
 
         return result['quickkey']
 
@@ -237,8 +249,10 @@ class MediaFireUploader(object):
         """
 
         upload_result = self._api.upload_simple(
-            upload_info.fd, upload_info.name,
+            upload_info.fd,
+            upload_info.name,
             folder_key=upload_info.folder_key,
+            filedrop_key=upload_info.filedrop_key,
             path=upload_info.path,
             file_size=upload_info.size,
             file_hash=upload_info.hash_)
@@ -262,14 +276,15 @@ class MediaFireUploader(object):
             # Calculate checksum of the unit
             upload_unit_info.hash_ = self.sha256_digest(upload_unit_info.fd)
 
-        # Rewind unit filehandle after checksum
-        upload_unit_info.fd.seek(0)
-
         result = self._api.upload_resumable(
-            upload_unit_info.fd, upload_unit_info.upload_info.size,
+            upload_unit_info.fd,
+            upload_unit_info.upload_info.size,
             upload_unit_info.upload_info.hash_,
-            upload_unit_info.hash_, upload_unit_info.uid,
-            unit_size, folder_key=upload_unit_info.upload_info.folder_key,
+            upload_unit_info.hash_,
+            upload_unit_info.uid,
+            unit_size,
+            filedrop_key=upload_unit_info.upload_info.filedrop_key,
+            folder_key=upload_unit_info.upload_info.folder_key,
             path=upload_unit_info.upload_info.path)
 
         return result
@@ -297,8 +312,8 @@ class MediaFireUploader(object):
                              unit_id, number_of_units)
                 continue
 
-            logger.info("Uploading unit %d of %d",
-                        unit_id + 1, number_of_units)
+            logger.debug("Uploading unit %d of %d",
+                         unit_id + 1, number_of_units)
 
             offset = unit_id * unit_size
 
@@ -338,14 +353,19 @@ class MediaFireUploader(object):
         bitmap = resumable_upload['bitmap']
 
         while not all_units_ready and retry_count < UPLOAD_RETRY_COUNT:
-            logger.info("Attempt #%d", retry_count + 1)
+            logger.debug("Attempt #%d", retry_count + 1)
 
             upload_key = self._upload_resumable_all(upload_info, bitmap,
                                                     number_of_units, unit_size)
 
             check_result = self._api.upload_check(
-                upload_info.name, path=upload_info.path, size=upload_info.size,
-                hash_=upload_info.hash_, resumable=True)
+                filename=upload_info.name,
+                size=upload_info.size,
+                hash_=upload_info.hash_,
+                folder_key=upload_info.folder_key,
+                filedrop_key=upload_info.filedrop_key,
+                path=upload_info.path,
+                resumable=True)
 
             resumable_upload = check_result['resumable_upload']
             all_units_ready = resumable_upload['all_units_ready'] == 'yes'
@@ -355,6 +375,6 @@ class MediaFireUploader(object):
                 logger.debug("Not all units uploaded")
                 retry_count += 1
 
-        logger.debug("upload complete. polling for status")
+        logger.debug("Upload complete. polling for status")
 
         return self._poll_upload(upload_key)
