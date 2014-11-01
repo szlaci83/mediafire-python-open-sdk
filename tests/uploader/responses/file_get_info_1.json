@@ -1,0 +1,38 @@
+{
+    "response": {
+        "action": "file/get_info",
+        "current_api_version": "1.2",
+        "file_info": {
+            "created": "2014-11-01 07:02:44",
+            "description": "",
+            "downloads": "0",
+            "edit": "1",
+            "filename": "filename",
+            "filetype": "document",
+            "flag": "22",
+            "hash": "3c17441d7d75aabe588665ff6a006e05ce60d7f2dbc0cce9e7a94457e2366bd7",
+            "links": {
+                "direct_download": "http://download.mediafire.com/1/123456789012345/filename",
+                "edit": "http://www.mediafire.com/edit/123456789012345/filename",
+                "normal_download": "http://www.mediafire.com/download/123456789012345/filename",
+                "one_time": {
+                    "download": "http://www.mediafire.com/?1",
+                    "view": "http://www.mediafire.com/view/2"
+                },
+                "read": "http://www.mediafire.com/view/123456789012345/filename",
+                "streaming": "http://transcode1.mediafire.com/1/123456789012345/dcf1/filename",
+                "view": "http://www.mediafire.com/view/123456789012345/filename"
+            },
+            "mimetype": "text/plain",
+            "owner_name": "Roman Yepishev",
+            "password_protected": "no",
+            "privacy": "private",
+            "quickkey": "123456789012345",
+            "revision": "4075",
+            "size": "17",
+            "view": "1"
+        },
+        "new_key": "yes",
+        "result": "Success"
+    }
+}
