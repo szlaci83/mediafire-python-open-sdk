@@ -14,9 +14,10 @@ API_VER = '1.1'
 # Retries on connection errors/timeouts
 API_ERROR_MAX_RETRIES = 5
 
-# pylint: disable=C0103
-logger = logging.getLogger(__name__)
-# pylint: enable=C0103
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+# Each API call may have lots of parameters, so disable warning
+# pylint: disable=too-many-arguments
 
 
 class QueryParams(dict):
@@ -55,7 +56,7 @@ class MediaFireApiError(Exception):
         return "{}: {}".format(self.code, self.message)
 
 
-class MediaFireApi(object):
+class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     """Low-level HTTP API Client"""
 
     def __init__(self):
@@ -496,7 +497,7 @@ class MediaFireApi(object):
             'folder_key_dst': folder_key_dst
         }))
 
-    def upload_check(self, filename, folder_key=None, filedrop_key=None,
+    def upload_check(self, filename=None, folder_key=None, filedrop_key=None,
                      size=None, hash_=None, path=None, resumable=None):
         """upload/check
 
