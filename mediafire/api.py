@@ -190,6 +190,8 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             response.raise_for_status()
             return response
 
+        logger.debug("response: %s", response.text)
+
         # if we are here, then most likely have json
         try:
             response_node = response.json()['response']
@@ -212,8 +214,10 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
 
         http://www.mediafire.com/developers/core_api/1.1/getting_started/#call_signature
         """
-        self._session_token['secret_key'] = (
-            int(self._session_token['secret_key']) * 16807) % 2147483647
+        # Don't regenerate the key if we have none
+        if self._session_token and 'secret_key' in self._session_token:
+            self._session_token['secret_key'] = (
+                int(self._session_token['secret_key']) * 16807) % 2147483647
 
     def set_session_token(self, session_token=None):
         """Set session token
