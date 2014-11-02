@@ -1,3 +1,7 @@
+"""Upload path tests"""
+
+from __future__ import unicode_literals
+
 import io
 import unittest
 
@@ -137,7 +141,7 @@ class TestUploadPath(unittest.TestCase):
             client._prepare_upload_info(source, dest_uri)
 
     def test_upload_fh_existing_overwrite(self):
-        source = io.StringIO("blah")
+        source = io.BytesIO(b"blah")
         dest_uri = 'mf:/f/m.txt'
         quick_key = 'j' * 15
         folder_key = 'h' * 13
@@ -160,7 +164,7 @@ class TestUploadPath(unittest.TestCase):
         self.assertEqual(result_folder_key, folder_key)
 
     def test_upload_fh_to_folder(self):
-        source = io.StringIO("blah")
+        source = io.BytesIO(b"blah")
         dest_uri = 'mf:/g/'
 
         def mock_get_resource_by_uri(uri):
@@ -177,7 +181,7 @@ class TestUploadPath(unittest.TestCase):
             client._prepare_upload_info(source, dest_uri)
 
     def test_upload_fh_target_parent_folder_does_not_exist(self):
-        source = io.StringIO("blah")
+        source = io.BytesIO(b"blah")
         dest_uri = 'mf:/h/k.txt'
 
         def mock_get_resource_by_uri(uri):

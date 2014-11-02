@@ -1,4 +1,7 @@
 """Tests for SubsetIO filehandle wrapper"""
+
+from __future__ import unicode_literals
+
 import os
 import io
 import unittest
@@ -66,7 +69,7 @@ class TestSubsetIOStringIO(unittest.TestCase):
 
     def test_stringio(self):
         """Test StringIO wrapper"""
-        parent_fd = io.StringIO("0123456789" * 1024)
+        parent_fd = io.BytesIO(b"0123456789" * 1024)
         parent_fd.seek(0)
 
         with SubsetIO(parent_fd, 1, 10) as chunked_fd:
@@ -74,7 +77,7 @@ class TestSubsetIOStringIO(unittest.TestCase):
 
             data = chunked_fd.read()
 
-            self.assertEqual(data, "1234567890")
+            self.assertEqual(data, b"1234567890")
 
 
 class TestSubsetIOFileEncoder(SubsetIOTest):

@@ -1,8 +1,11 @@
 """SubsetIO"""
 
+from __future__ import unicode_literals
+
 import os
 import io
 import logging
+
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -18,7 +21,7 @@ class SubsetIO(io.IOBase):
         """
 
         try:
-            self.parent_fd = os.fdopen(os.dup(fd.fileno()), mode='rb')
+            self.parent_fd = os.fdopen(os.dup(fd.fileno()), 'rb')
         except io.UnsupportedOperation:
             logger.debug("Re-using parent fd (not thread-safe)")
             self.parent_fd = fd

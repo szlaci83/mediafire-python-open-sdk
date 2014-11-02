@@ -1,11 +1,17 @@
 """Basic uploader tests"""
 
+from __future__ import unicode_literals
+
+import six
 import io
 import unittest
 import responses
 import json
 
-from unittest.mock import MagicMock
+if six.PY3:
+    from unittest.mock import MagicMock
+elif six.PY2:
+    from mock import MagicMock
 
 from mediafire.api import (MediaFireApi, API_BASE, API_VER)
 from mediafire.uploader import MediaFireUploader

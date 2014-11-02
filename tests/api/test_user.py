@@ -1,9 +1,11 @@
 """Tests for user/ APIs"""
 
+from __future__ import unicode_literals
+
 import responses
 import unittest
 
-from urllib.parse import parse_qs
+from six.moves.urllib.parse import parse_qs
 
 from tests.api.base import (MediaFireApiTestCase,
                             MediaFireApiTestCaseWithSessionToken)
