@@ -25,9 +25,10 @@ class TestUploadPath(unittest.TestCase):
         client = MediaFireClient()
         client.get_resource_by_uri = mock_get_resource_by_uri
 
-        result = client._prepare_upload(source, dest_uri)
-        self.assertEqual(result.name, 'f.txt')
-        self.assertEqual(result.folder_key, folder_key)
+        result_folder_key, result_name = client._prepare_upload_info(source,
+                                                                     dest_uri)
+        self.assertEqual(result_name, 'f.txt')
+        self.assertEqual(result_folder_key, folder_key)
 
     def test_upload_to_folder(self):
         source = '/tmp/j.txt'
@@ -47,9 +48,10 @@ class TestUploadPath(unittest.TestCase):
         client = MediaFireClient()
         client.get_resource_by_uri = mock_get_resource_by_uri
 
-        result = client._prepare_upload(source, dest_uri)
-        self.assertEqual(result.name, 'j.txt')
-        self.assertEqual(result.folder_key, folder_key)
+        result_folder_key, result_name = client._prepare_upload_info(source,
+                                                                     dest_uri)
+        self.assertEqual(result_name, 'j.txt')
+        self.assertEqual(result_folder_key, folder_key)
 
     def test_upload_to_folder_target_name_is_folder(self):
         source = '/tmp/j.txt'
@@ -73,7 +75,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ValueError):
-            client._prepare_upload(source, dest_uri)
+            client._prepare_upload_info(source, dest_uri)
 
     def test_upload_target_parent_folder_does_not_exist(self):
         source = '/tmp/k.txt'
@@ -89,7 +91,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ResourceNotFoundError):
-            client._prepare_upload(source, dest_uri)
+            client._prepare_upload_info(source, dest_uri)
 
     def test_upload_target_file_doest_not_exist(self):
         source = '/tmp/l.txt'
@@ -109,10 +111,11 @@ class TestUploadPath(unittest.TestCase):
         client = MediaFireClient()
         client.get_resource_by_uri = mock_get_resource_by_uri
 
-        result = client._prepare_upload(source, dest_uri)
+        result_folder_key, result_name = client._prepare_upload_info(source,
+                                                                     dest_uri)
 
-        self.assertEqual(result.name, 'l.txt')
-        self.assertEqual(result.folder_key, folder_key)
+        self.assertEqual(result_name, 'l.txt')
+        self.assertEqual(result_folder_key, folder_key)
 
     def test_upload_target_file_parent_folder_is_file(self):
         source = '/tmp/m.txt'
@@ -131,7 +134,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(NotAFolderError):
-            client._prepare_upload(source, dest_uri)
+            client._prepare_upload_info(source, dest_uri)
 
     def test_upload_fh_existing_overwrite(self):
         source = io.StringIO("blah")
@@ -150,10 +153,11 @@ class TestUploadPath(unittest.TestCase):
         client = MediaFireClient()
         client.get_resource_by_uri = mock_get_resource_by_uri
 
-        result = client._prepare_upload(source, dest_uri)
+        result_folder_key, result_name = client._prepare_upload_info(source,
+                                                                     dest_uri)
 
-        self.assertEqual(result.folder_key, folder_key)
-        self.assertEqual(result.name, 'm.txt')
+        self.assertEqual(result_name, 'm.txt')
+        self.assertEqual(result_folder_key, folder_key)
 
     def test_upload_fh_to_folder(self):
         source = io.StringIO("blah")
@@ -170,7 +174,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ValueError):
-            client._prepare_upload(source, dest_uri)
+            client._prepare_upload_info(source, dest_uri)
 
     def test_upload_fh_target_parent_folder_does_not_exist(self):
         source = io.StringIO("blah")
@@ -186,7 +190,7 @@ class TestUploadPath(unittest.TestCase):
         client.get_resource_by_uri = mock_get_resource_by_uri
 
         with self.assertRaises(ResourceNotFoundError):
-            client._prepare_upload(source, dest_uri)
+            client._prepare_upload_info(source, dest_uri)
 
 
 if __name__ == '__main__':

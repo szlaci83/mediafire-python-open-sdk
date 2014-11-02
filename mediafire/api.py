@@ -14,9 +14,10 @@ API_VER = '1.1'
 # Retries on connection errors/timeouts
 API_ERROR_MAX_RETRIES = 5
 
-# pylint: disable=C0103
-logger = logging.getLogger(__name__)
-# pylint: enable=C0103
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+# Each API call may have lots of parameters, so disable warning
+# pylint: disable=too-many-arguments
 
 
 class QueryParams(dict):
@@ -55,7 +56,7 @@ class MediaFireApiError(Exception):
         return "{}: {}".format(self.code, self.message)
 
 
-class MediaFireApi(object):
+class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     """Low-level HTTP API Client"""
 
     def __init__(self):
@@ -177,7 +178,7 @@ class MediaFireApi(object):
                 # we never request xml
                 if response.text.lstrip().startswith('{'):
                     logger.debug("API BUG: text/xml content-type "
-                                 "with JSON payload: %s", response.text)
+                                 "with JSON payload")
                 else:
                     forward_raw = True
             else:
@@ -188,6 +189,8 @@ class MediaFireApi(object):
         if forward_raw:
             response.raise_for_status()
             return response
+
+        logger.debug("response: %s", response.text)
 
         # if we are here, then most likely have json
         try:
@@ -211,8 +214,10 @@ class MediaFireApi(object):
 
         http://www.mediafire.com/developers/core_api/1.1/getting_started/#call_signature
         """
-        self._session_token['secret_key'] = (
-            int(self._session_token['secret_key']) * 16807) % 2147483647
+        # Don't regenerate the key if we have none
+        if self._session_token and 'secret_key' in self._session_token:
+            self._session_token['secret_key'] = (
+                int(self._session_token['secret_key']) * 16807) % 2147483647
 
     def set_session_token(self, session_token=None):
         """Set session token
@@ -496,7 +501,7 @@ class MediaFireApi(object):
             'folder_key_dst': folder_key_dst
         }))
 
-    def upload_check(self, filename, folder_key=None, filedrop_key=None,
+    def upload_check(self, filename=None, folder_key=None, filedrop_key=None,
                      size=None, hash_=None, path=None, resumable=None):
         """upload/check
 
