@@ -178,7 +178,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                 # we never request xml
                 if response.text.lstrip().startswith('{'):
                     logger.debug("API BUG: text/xml content-type "
-                                 "with JSON payload: %s", response.text)
+                                 "with JSON payload")
                 else:
                     forward_raw = True
             else:
