@@ -262,7 +262,8 @@ class MediaFireUploader(object):
             upload_info.size,
             upload_info.hash_,
             path=upload_info.path,
-            folder_key=upload_info.folder_key
+            folder_key=upload_info.folder_key,
+            filedrop_key=upload_info.filedrop_key
         )
 
         return UploadResult(
