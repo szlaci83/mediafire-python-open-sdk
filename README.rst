@@ -8,7 +8,10 @@ Python implementation of `MediaFire Core API`_.
 .. _MediaFire Core Api: http://www.mediafire.com/developers/core_api/
 
 This SDK contains three entities: API client, uploader and high-level
-client aiming to make client development easier.
+client.
+
+.. image:: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk.svg?branch=master
+    :target: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk
 
 ==================
 What should I use?
