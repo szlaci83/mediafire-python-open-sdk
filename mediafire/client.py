@@ -435,7 +435,9 @@ class MediaFireClient(object):
                     target.endswith("/"):
                 target = os.path.join(target, name)
 
-            os.makedirs(os.path.dirname(target), exist_ok=True)
+            if not os.path.isdir(os.path.dirname(target)):
+                os.makedirs(os.path.dirname(target))
+
             logger.info("Downloading %s to %s", src_uri, target)
 
         response = requests.get(direct_download, stream=True)
