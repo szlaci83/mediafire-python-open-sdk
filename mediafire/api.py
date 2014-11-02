@@ -1,9 +1,14 @@
 """Low-level MediaFire API Client"""
+
+from __future__ import unicode_literals
+
 import hashlib
 import requests
 import logging
 
-from urllib.parse import urlencode
+import six
+
+from six.moves.urllib.parse import urlencode
 
 from requests_toolbelt import MultipartEncoder
 from requests.adapters import HTTPAdapter
@@ -128,7 +133,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
 
         uri = self._build_uri(action)
 
-        if type(params) is str:
+        if type(params) is six.text_type:
             query = params
         else:
             query = self._build_query(uri, params, action_token_type)

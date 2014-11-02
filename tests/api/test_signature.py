@@ -1,9 +1,11 @@
 """Signature generation tests"""
 
+from __future__ import unicode_literals
+
 import responses
 import unittest
 
-from urllib.parse import parse_qs
+from six.moves.urllib.parse import parse_qs
 
 from mediafire.api import MediaFireApiError
 from tests.api.base import MediaFireApiTestCase

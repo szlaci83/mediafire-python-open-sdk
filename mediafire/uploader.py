@@ -1,5 +1,7 @@
 """MediaFireUploader - API encapsulating Upload magic"""
 
+from __future__ import unicode_literals
+
 import os
 import hashlib
 import logging

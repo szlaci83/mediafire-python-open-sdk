@@ -1,12 +1,14 @@
 """MediaFire Client"""
 
+from __future__ import unicode_literals
+
 import os
 import hashlib
 import logging
 import requests
 import posixpath
 
-from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 
 from mediafire.api import (MediaFireApi, MediaFireApiError)
 from mediafire.uploader import (MediaFireUploader, UploadSession)
