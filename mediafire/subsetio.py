@@ -2,6 +2,9 @@
 
 import os
 import io
+import logging
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class SubsetIO(io.IOBase):
@@ -17,6 +20,7 @@ class SubsetIO(io.IOBase):
         try:
             self.parent_fd = os.fdopen(os.dup(fd.fileno()), mode='rb')
         except io.UnsupportedOperation:
+            logger.debug("Re-using parent fd (not thread-safe)")
             self.parent_fd = fd
 
         self.offset = offset
@@ -72,4 +76,9 @@ class SubsetIO(io.IOBase):
 
     def close(self):
         """Close file, see file.close"""
-        self.parent_fd.close()
+        try:
+            self.parent_fd.fileno()
+        except io.UnsupportedOperation:
+            logger.debug("Not closing parent_fd - reusing existing")
+        else:
+            self.parent_fd.close()
