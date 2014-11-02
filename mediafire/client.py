@@ -338,7 +338,7 @@ class MediaFireClient(object):
 
     def upload_session(self):
         """Returns upload session context manager"""
-        return UploadSession(self)
+        return UploadSession(self.api)
 
     def _prepare_upload_info(self, source, dest_uri):
         """Prepare Upload object, resolve paths"""
@@ -389,7 +389,7 @@ class MediaFireClient(object):
         dest_uri -- MediaFire Resource URI
         """
 
-        folder_key, name = self._prepare_upload(source, dest_uri)
+        folder_key, name = self._prepare_upload_info(source, dest_uri)
 
         is_fh = hasattr(source, 'read')
 
