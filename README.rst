@@ -7,10 +7,18 @@ Python implementation of `MediaFire Core API`_.
 
 .. _MediaFire Core Api: http://www.mediafire.com/developers/core_api/
 
-This is a work in progress. Expect breaking changes in the high-level client.
-
 This SDK contains three entities: API client, uploader and high-level
 client aiming to make client development easier.
+
+==================
+What should I use?
+==================
+
+High-level client is a work in progress, so you may want to stick to
+`MediaFireApi` and `MediaFireUploader` as these are covered by tests.
+
+If you don't mind having breaking changes introduced here and there as the
+high-level API is being shaped, then use `MediaFireClient`.
 
 ==================
 API Client library
@@ -210,7 +218,7 @@ Run it with:
 About and License
 =================
 
-Copyright (c) 2014, Roman Yepishev. All right reserved. Website : http://rtg.in.ua
+Copyright (c) 2014, Roman Yepishev. All rights reserved. Website : http://www.keypressure.com
 
 This project was forked by MediaFire with explicit permission from Roman Yepishev on 10.24.2014
 
