@@ -1,2 +1,1 @@
-include *.txt
-recursive-include docs *.txt
+include CHANGES.txt LICENSE.txt requirements.txt README.rst

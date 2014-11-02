@@ -167,7 +167,8 @@ Use --debug option to see API calls and internal debug information.
 Requirements
 ------------
 
-* python3
+* python 2.7 or 3.4
+* six
 * requests
 * requests\_toolbelt
 * responses (for testing)
@@ -175,40 +176,14 @@ Requirements
 Installing
 ----------
 
-I highly suggest installing it per-user or a virtualenv and avoid installing this library systemwide.
-
-Clone it:
-
 .. code-block:: bash
 
-    $ git clone https://github.com/MediaFire/mediafire-python-open-sdk.git
-    $ cd python-mediafire-sdk
-
-For user installation, follow https://pip.pypa.io/en/latest/installing.html to get ``get-pip.py``, then:
-
-.. code-block:: bash
-
-    $ PATH=~/.local/bin:$PATH
-    $ python3 get-pip.py --user
-
-    $ pip3 install -r requirements.txt -I
-    $ python3 setup.py build install --user
-    $ mediafire-cli --help
-
-When in virtualenv, run this:
-
-.. code-block:: bash
-
-    $ pip3 install -r requirements.txt
-    $ python3 setup.py build install
-
-    # make sure that cli is working
-    $ examples/mediafire-cli --help
+    $ pip install mediafire
 
 Tests
 -----
 
-Basic test suite is located under ``tests/``
+Test suite is located under ``tests/``
 
 Run it with:
 

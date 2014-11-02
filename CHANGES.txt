@@ -1,1 +1,7 @@
-v0.1 2014-09-07 -- Initial release.
+2014-11-02 Release 0.2.0
+ * Factor out uploader code
+ * Python 2 support
+ * Bug fixes and tests
+
+2014-09-07 Release 0.1.0
+ * Initial release.
