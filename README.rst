@@ -9,12 +9,16 @@ Python implementation of `MediaFire Core API`_.
 
 This is a work in progress. Expect breaking changes in the high-level client.
 
+This SDK contains three entities: API client, uploader and high-level
+client aiming to make client development easier.
+
 ==================
 API Client library
 ==================
 
 API Client library provides a low-level interface to MediaFire API. It handles
-requests, signatures and errors. Uses python-requests for streaming uploads and does not require the whole file to be loaded in memory.
+requests, signatures and errors. Uses python-requests for streaming uploads and
+does not require the whole file to be loaded in memory.
 
 Usage:
 
@@ -45,16 +49,38 @@ Usage:
 API Client library supports operation w/o session_token. In this case all
 operations that do require session_token will fail with Access denied error.
 
-==================
-High-level library
-==================
+========
+Uploader
+========
+
+MediaFire supports several upload methods and `MediaFireUploader` exposes a
+single `upload` method to make things easier:
+
+.. code-block:: python
+
+    from mediafire.api import MediaFireApi
+    from mediafire.uploader import MediaFireUploader
+
+    api = MediaFireApi()
+    uploader = MediaFireUploader(api)
+
+    fd = open('/path/to/file', 'rb')
+
+    result = uploader.upload(fd, 'Some filename.txt',
+                             folder_key='1234567890123')
+
+    pprint(api.file_get_info(result.quickkey))
+
+=========================
+High-level Client Library
+=========================
 
 High-level client library wraps API calls and presents simplified interface.
 
 Supported operations:
 
-* Upload (instant, simple, and resumable, can use action tokens)
-* Download (direct download link)
+* File upload
+* File download (direct download link)
 * Listing directories
 * Creating directories
 * Removing files and directories
@@ -87,8 +113,8 @@ MediaFire resources can be referenced by path or by quickkey/folderkey.
 
 See ``examples/mediafire-cli.py`` for high-level client usage.
 
-CLI Interface
--------------
+Example CLI Interface
+---------------------
 
 Work in progress. Can be used for basic tasks, such as directory listing,
 uploads, downloads, getting resource information and removing files and folders
@@ -97,7 +123,7 @@ from the command line.
 .. code-block:: text
 
 
-        usage: mediafire-cli [-h] [--debug] [--email EMAIL] [--password PASSWORD]
+        usage: examples/mediafire-cli.py [-h] [--debug] [--email EMAIL] [--password PASSWORD]
                          {ls,file-upload,file-download,folder-create,resource-delete,
                           file-update-metadata,folder-update-metadata,debug-get-resource}
                          ...
