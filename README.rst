@@ -1,14 +1,11 @@
-**************************
-MediaFire: Python Open SDK
-**************************
+=========================
+MediaFire Python Open SDK
+=========================
 
 
-Python implementation of `MediaFire Core API`_.
+This is a Python implementation of `MediaFire Core API`_ client.
 
 .. _MediaFire Core Api: http://www.mediafire.com/developers/core_api/
-
-This SDK contains three entities: API client, uploader and high-level
-client.
 
 .. image:: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk.svg?branch=master
     :target: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk
@@ -17,19 +14,18 @@ client.
 What should I use?
 ==================
 
-High-level client is a work in progress, so you may want to stick to
-`MediaFireApi` and `MediaFireUploader` as these are covered by tests.
+You may want to stick to ``MediaFireApi`` and ``MediaFireUploader`` as these are
+covered by tests.
 
 If you don't mind having breaking changes introduced here and there as the
-high-level API is being shaped, then use `MediaFireClient`.
+high-level API is being shaped, then use ``MediaFireClient``.
 
-==================
-API Client library
-==================
+==============================
+``mediafire.api.MediaFireApi``
+==============================
 
-API Client library provides a low-level interface to MediaFire API. It handles
-requests, signatures and errors. Uses python-requests for streaming uploads and
-does not require the whole file to be loaded in memory.
+API Client library provides an interface to MediaFire API. It handles
+requests, responses, signatures and errors.
 
 Usage:
 
@@ -43,6 +39,8 @@ Usage:
         password='password',
         app_id='42511')
 
+    # API client does not know about the token
+    # until explicitly told about it:
     api.set_session_token(session_result)
 
     response = api.user_get_info()
@@ -54,15 +52,73 @@ Usage:
         "filename": "mf-logo.png"})
 
     response = api.request("upload/get_web_uploads",
-                        {"key": status['upload_key']})
+                           {"key": response['upload_key']})
 
 
 API Client library supports operation w/o session_token. In this case all
-operations that do require session_token will fail with Access denied error.
+operations that do require session_token will fail with Access denied error:
 
-========
-Uploader
-========
+.. code-block: python
+
+    from mediafire.api import MediaFireApi
+
+    api = MediaFireApi()
+    response = api.system_get_info()
+    print(response)  # prints system info
+
+    response = api.user_get_info()  # fails with "Session token is missing"
+
+For information on wrapped methods, see ``pydoc mediafire.api``. For
+documentation on actual values expected, see `MediaFire Core API`_
+documentation.
+
+All wrapped methods follow the same naming convention, ``category_action``, so
+upload/instant is ``upload_instant``.
+
+You can construct the call yourself easily:
+
+.. code-block:: python
+
+    response = api.request("user/set_avatar",
+                           {"quick_key": "123456789012345"})
+
+In case response is a file download, e.g. ``file/zip``, the response returned
+is a `requests.Response`_ object, which you can read from:
+
+.. code-block:: python
+
+    ...
+    response = api.request("file/zip", {"keys": "c94lcpx3vax6xp3"})
+    with io.open("/tmp/green.zip", 'wb') as fd:
+        for chunk in response.iter_content(chunk_size=4096):
+            fd.write(chunk)
+    ...
+
+.. _requests.Response: http://docs.python-requests.org/en/latest/api/#requests.Response
+
+Downloading
+-----------
+
+API client does not handle regular file downloads, because these are simple HTTP requests
+to URLs returned by "file/get_links", here's how you can do that yourself:
+
+.. code-block:: python
+
+    response = api.file_get_links('c94lcpx3vax6xp3')
+    normal_download_url = response['links'][0]['normal_download']
+
+    response = requests.get(normal_download_url, stream=True)
+    with io.open("/tmp/green.jpg", 'wb') as fd:
+        for chunk in response.iter_content(chunk_size=4096):
+            fd.write(chunk)
+
+See Download_ documentation for more information.
+
+.. _Download: http://www.mediafire.com/developers/core_api/1.2/download/
+
+========================================
+``mediafire.uploader.MediaFireUploader``
+========================================
 
 MediaFire supports several upload methods and `MediaFireUploader` exposes a
 single `upload` method to make things easier:
@@ -82,9 +138,9 @@ single `upload` method to make things easier:
 
     pprint(api.file_get_info(result.quickkey))
 
-=========================
-High-level Client Library
-=========================
+====================================
+``mediafire.client.MediaFireClient``
+====================================
 
 High-level client library wraps API calls and presents simplified interface.
 
@@ -124,46 +180,6 @@ MediaFire resources can be referenced by path or by quickkey/folderkey.
 
 See ``examples/mediafire-cli.py`` for high-level client usage.
 
-Example CLI Interface
----------------------
-
-Work in progress. Can be used for basic tasks, such as directory listing,
-uploads, downloads, getting resource information and removing files and folders
-from the command line.
-
-.. code-block:: text
-
-
-        usage: examples/mediafire-cli.py [-h] [--debug] [--email EMAIL] [--password PASSWORD]
-                         {ls,file-upload,file-download,folder-create,resource-delete,
-                          file-update-metadata,folder-update-metadata,debug-get-resource}
-                         ...
-
-        Command-line interface to MediaFire Simple File Sharing and Storage
-
-        optional arguments:
-        -h, --help            show this help message and exit
-        --debug               Enable debug output
-        --email EMAIL
-        --password PASSWORD
-
-        Actions:
-        {ls,file-upload,file-download,folder-create,resource-delete,file-update-metadata,
-         folder-update-metadata,debug-get-resource}
-        ls                  List directory contents
-        file-upload         Upload files
-        file-download       Download file
-        folder-create       Create folder
-        resource-delete     Delete resource
-        file-update-metadata
-                            Update file metadata
-        folder-update-metadata
-                            Update folder metadata
-        debug-get-resource  Get resource info (debug)
-
-
-Use --debug option to see API calls and internal debug information.
-
 Requirements
 ------------
 
@@ -189,14 +205,33 @@ Run it with:
 
 .. code-block:: bash
 
+
+    git clone https://github.com/MediaFire/mediafire-python-open-sdk.git
     cd mediafire-python-open-sdk
+    # Run tests with python 3 interpreter
     PYTHONPATH=. python3 -munittest
+    # Run tests with python 2 interpreter
+    PYTHONPATH=. python -munittest discover
+
+================
+Reporting issues
+================
+
+Please use the `MediaFire/mediafire-python-open-sdk`_ project issue tracker
+to report issues with the implementation.
+
+.. _MediaFire/mediafire-python-open-sdk: https://github.com/MediaFire/mediafire-python-open-sdk
+
+Note that MediaFire server API is evolving as well, so you may to check
+`MediaFire Developers Forum / REST API section`_ for known API issues.
+
+.. _MediaFire Developers Forum / REST API section: http://forum.mediafiredev.com/forumdisplay.php?8-Using-the-REST-API-with-your-application
 
 =================
 About and License
 =================
 
-Copyright (c) 2014, Roman Yepishev. All rights reserved. Website : http://www.keypressure.com
+Copyright (c) 2014, Roman Yepishev. All rights reserved. Website: http://www.keypressure.com
 
 This project was forked by MediaFire with explicit permission from Roman Yepishev on 10.24.2014
 
