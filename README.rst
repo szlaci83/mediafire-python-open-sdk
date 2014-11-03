@@ -20,9 +20,9 @@ covered by tests.
 If you don't mind having breaking changes introduced here and there as the
 high-level API is being shaped, then use ``MediaFireClient``.
 
-==============================
-``mediafire.api.MediaFireApi``
-==============================
+======================
+mediafire.MediaFireApi
+======================
 
 API Client library provides an interface to MediaFire API. It handles
 requests, responses, signatures and errors.
@@ -31,7 +31,7 @@ Usage:
 
 .. code-block:: python
 
-    from mediafire.api import MediaFireApi
+    from mediafire import MediaFireApi
 
     api = MediaFireApi()
     session_result = api.user_get_session_token(
@@ -60,7 +60,7 @@ operations that do require session_token will fail with Access denied error:
 
 .. code-block: python
 
-    from mediafire.api import MediaFireApi
+    from mediafire import MediaFireApi
 
     api = MediaFireApi()
     response = api.system_get_info()
@@ -99,8 +99,8 @@ is a `requests.Response`_ object, which you can read from:
 Downloading
 -----------
 
-API client does not handle regular file downloads, because these are simple HTTP requests
-to URLs returned by "file/get_links", here's how you can do that yourself:
+API client does not handle regular file downloads because these are simple HTTP requests
+to URLs returned by "file/get_links". Here's how you can do that yourself:
 
 .. code-block:: python
 
@@ -116,20 +116,21 @@ See Download_ documentation for more information.
 
 .. _Download: http://www.mediafire.com/developers/core_api/1.2/download/
 
-========================================
-``mediafire.uploader.MediaFireUploader``
-========================================
+===========================
+mediafire.MediaFireUploader
+===========================
 
 MediaFire supports several upload methods and `MediaFireUploader` exposes a
 single `upload` method to make things easier:
 
 .. code-block:: python
 
-    from mediafire.api import MediaFireApi
-    from mediafire.uploader import MediaFireUploader
+    from mediafire import (MediaFireApi, MediaFireUploader)
 
     api = MediaFireApi()
     uploader = MediaFireUploader(api)
+
+    # ... authenticate ...
 
     fd = open('/path/to/file', 'rb')
 
@@ -138,9 +139,9 @@ single `upload` method to make things easier:
 
     pprint(api.file_get_info(result.quickkey))
 
-====================================
-``mediafire.client.MediaFireClient``
-====================================
+================================
+mediafire.client.MediaFireClient
+================================
 
 High-level client library wraps API calls and presents simplified interface.
 
@@ -200,8 +201,6 @@ Tests
 -----
 
 Test suite is located under ``tests/``
-
-Run it with:
 
 .. code-block:: bash
 

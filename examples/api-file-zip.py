@@ -5,8 +5,9 @@
 import os
 import pprint
 
-from mediafire.api import MediaFireApi
-from mediafire.cli import APP_ID
+from mediafire import MediaFireApi
+
+APP_ID = '42511'
 
 MEDIAFIRE_EMAIL = os.environ["MEDIAFIRE_EMAIL"]
 MEDIAFIRE_PASSWORD = os.environ["MEDIAFIRE_PASSWORD"]

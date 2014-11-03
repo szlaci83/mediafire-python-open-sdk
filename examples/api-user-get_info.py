@@ -3,8 +3,9 @@
 import os
 import pprint
 
-from mediafire.api import MediaFireApi
-from mediafire.cli import APP_ID
+from mediafire import MediaFireApi
+
+APP_ID = '42511'
 
 pp = pprint.PrettyPrinter(indent=2)
 

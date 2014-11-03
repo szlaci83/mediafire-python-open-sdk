@@ -6,8 +6,7 @@ import logging
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-from mediafire.api import MediaFireApi
-from mediafire.uploader import MediaFireUploader
+from mediafire import (MediaFireApi, MediaFireUploader)
 
 APP_ID = '42511'
 MEDIAFIRE_EMAIL = os.environ['MEDIAFIRE_EMAIL']
