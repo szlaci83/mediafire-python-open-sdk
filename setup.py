@@ -8,7 +8,7 @@ setup(
     name='mediafire',
     version='0.2.0',
     author='Roman Yepishev',
-    author_email='rye@keypressure.com',
+    author_email='roman.yepishev@gmail.com',
     packages=['mediafire'],
     url='https://github.com/MediaFire/mediafire-python-open-sdk',
     license='BSD',
