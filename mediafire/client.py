@@ -368,10 +368,14 @@ class MediaFireClient(object):
                     result = self.get_resource_by_uri(dest_uri)
                     if type(result) is Folder:
                         raise ValueError("Target is a folder (file expected)")
+                    folder_key = result['parent_folderkey']
+                    name = result['filename']
                 except ResourceNotFoundError:
                     # ok, neither a file nor folder, proceed
                     folder_key = dest_resource['folderkey']
                     name = basename
+            else:
+                raise Exception("Unknown resource type")
         else:
             # get parent resource
             parent_uri = '/'.join(dest_uri.split('/')[0:-1])
