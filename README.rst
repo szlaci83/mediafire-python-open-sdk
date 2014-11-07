@@ -58,7 +58,7 @@ Usage:
 API Client library supports operation w/o session_token. In this case all
 operations that do require session_token will fail with Access denied error:
 
-.. code-block: python
+.. code-block:: python
 
     from mediafire import MediaFireApi
 
@@ -70,7 +70,7 @@ operations that do require session_token will fail with Access denied error:
 
 Once set, session token can be unset:
 
-.. code-block: python
+.. code-block:: python
 
     api.session = None
     # or
@@ -90,20 +90,6 @@ You can construct the call yourself easily:
     response = api.request("user/set_avatar",
                            {"quick_key": "123456789012345"})
 
-In case response is a file download, e.g. ``file/zip``, the response returned
-is a `requests.Response`_ object, which you can read from:
-
-.. code-block:: python
-
-    ...
-    response = api.request("file/zip", {"keys": "c94lcpx3vax6xp3"})
-    with io.open("/tmp/green.zip", 'wb') as fd:
-        for chunk in response.iter_content(chunk_size=4096):
-            fd.write(chunk)
-    ...
-
-.. _requests.Response: http://docs.python-requests.org/en/latest/api/#requests.Response
-
 Downloading
 -----------
 
@@ -119,6 +105,20 @@ to URLs returned by "file/get_links". Here's how you can do that yourself:
     with io.open("/tmp/green.jpg", 'wb') as fd:
         for chunk in response.iter_content(chunk_size=4096):
             fd.write(chunk)
+
+In case response is a file download, e.g. ``file/zip``, the response returned
+is a `requests.Response`_ object, which you can read from:
+
+.. code-block:: python
+
+    ...
+    response = api.request("file/zip", {"keys": "c94lcpx3vax6xp3"})
+    with io.open("/tmp/green.zip", 'wb') as fd:
+        for chunk in response.iter_content(chunk_size=4096):
+            fd.write(chunk)
+    ...
+
+.. _requests.Response: http://docs.python-requests.org/en/latest/api/#requests.Response
 
 See Download_ documentation for more information.
 
@@ -154,7 +154,7 @@ FileDrop
 
 For FileDrop uploads (i.e. when filedrop_key is used) only ``upload/instant``
 result has quickkey. ``upload/instant`` and ``upload/resumable`` return
-``None`` for all the fields, since ``upload/poll`` [does not support]
+``None`` for all the fields, since ``upload/poll`` `does not support`_
 encrypted upload key.
 
 .. _does not support: http://forum.mediafiredev.com/showthread.php?293-FileDrop-upload-instant-w-o-session-succeeds-and-fails-at-the-same-time&p=478&viewfull=1#post478
