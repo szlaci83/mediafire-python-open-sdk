@@ -15,7 +15,9 @@ class SessionTokenTests(MediaFireApiTestCase):
             "secret_key": "1234"
         }
 
-        self.api.set_session_token(token)
+        self.api.session = token
+
+        self.assertEqual(self.api.session['session_token'], "1234")
 
     def test_set_bad_token_raises_concern(self):
         """Test that we won't save token that does not look like one"""
@@ -23,9 +25,28 @@ class SessionTokenTests(MediaFireApiTestCase):
         token = "I am a string"
 
         with self.assertRaises(ValueError):
-            self.api.set_session_token(token)
+            self.api.session = token
+
+        self.assertIsNone(self.api.session)
 
     def test_unset_token_works(self):
         """Test that unsetting the token does not fail"""
 
-        self.api.set_session_token(None)
+        self.api.session = None
+        self.assertIsNone(self.api.session)
+
+    def test_delete_session_works(self):
+        """Test that property removal works"""
+
+        session = {
+            "session_token": "1",
+            "time": "2",
+            "secret_key": "3"
+        }
+
+        self.api.session = session
+        self.assertEqual(self.api.session['session_token'], "1")
+
+        del self.api.session
+
+        self.assertIsNone(self.api.session)

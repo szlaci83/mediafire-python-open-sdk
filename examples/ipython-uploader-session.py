@@ -13,11 +13,11 @@ MEDIAFIRE_EMAIL = os.environ['MEDIAFIRE_EMAIL']
 MEDIAFIRE_PASSWORD = os.environ['MEDIAFIRE_PASSWORD']
 
 api = MediaFireApi()
-session_token = api.user_get_session_token(app_id=APP_ID,
-                                           email=MEDIAFIRE_EMAIL,
-                                           password=MEDIAFIRE_PASSWORD)
+session = api.user_get_session_token(app_id=APP_ID,
+                                     email=MEDIAFIRE_EMAIL,
+                                     password=MEDIAFIRE_PASSWORD)
 
-api.set_session_token(session_token)
+api.session = session
 
 uploader = MediaFireUploader(api)
 

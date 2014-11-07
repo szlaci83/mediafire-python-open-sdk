@@ -16,7 +16,7 @@ class MediaFireApiTestCase(unittest.TestCase):
         """Build full URL from action"""
         return API_BASE + '/api/' + API_VER + '/' + action + '.php'
 
-    def setUp(self, session_token=None):
+    def setUp(self):
         """Set up test"""
         self.api = MediaFireApi()
 
@@ -30,13 +30,12 @@ class MediaFireApiTestCase(unittest.TestCase):
 class MediaFireApiTestCaseWithSessionToken(MediaFireApiTestCase):
     """Base class for API tests with session_token"""
 
-    def setUp(self, session_token=None):
+    def setUp(self, session=None):
         """Set up test"""
-        super(MediaFireApiTestCaseWithSessionToken, self).setUp(
-            session_token=session_token)
+        super(MediaFireApiTestCaseWithSessionToken, self).setUp()
 
-        if session_token is None:
-            session_token = {
+        if session is None:
+            session = {
                 'session_token': 'a' * 144,
                 'secret_key': '1000000000',
                 'time': '0.0',
@@ -44,4 +43,4 @@ class MediaFireApiTestCaseWithSessionToken(MediaFireApiTestCase):
                 'ekey': '54321',
             }
 
-        self.api.set_session_token(session_token)
+        self.api.session = session

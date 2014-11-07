@@ -34,14 +34,14 @@ Usage:
     from mediafire import MediaFireApi
 
     api = MediaFireApi()
-    session_result = api.user_get_session_token(
+    session = api.user_get_session_token(
         email='your.email@example.net',
         password='password',
         app_id='42511')
 
     # API client does not know about the token
     # until explicitly told about it:
-    api.set_session_token(session_result)
+    api.session = session
 
     response = api.user_get_info()
     print(response['user_info']['display_name'])
@@ -67,6 +67,14 @@ operations that do require session_token will fail with Access denied error:
     print(response)  # prints system info
 
     response = api.user_get_info()  # fails with "Session token is missing"
+
+Once set, session token can be unset:
+
+.. code-block: python
+
+    api.session = None
+    # or
+    del api.session
 
 For information on wrapped methods, see ``pydoc mediafire.api``. For
 documentation on actual values expected, see `MediaFire Core API`_
