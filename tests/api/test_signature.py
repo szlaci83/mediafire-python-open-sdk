@@ -29,7 +29,7 @@ class TestV2CallSignature(MediaFireApiTestCase):
             'pkey': '111',
             'ekey': '222',
         }
-        self.api.set_session_token(session_token)
+        self.api.session = session_token
         self.url = self.build_url('user/get_info')
 
     @responses.activate

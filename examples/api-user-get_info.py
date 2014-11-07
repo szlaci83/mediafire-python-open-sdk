@@ -18,7 +18,7 @@ session = api.user_get_session_token(app_id=APP_ID, email=MEDIAFIRE_EMAIL,
 
 pp.pprint(session)
 
-api.set_session_token(session)
+api.session = session
 
 result = api.user_get_info()
 

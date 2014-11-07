@@ -66,7 +66,7 @@ class MediaFireClient(object):
         self.api = MediaFireApi()
 
         if session_token:
-            self.api.set_session_token(session_token)
+            self.api.session = session_token
 
     def login(self, email=None, password=None, app_id=None, api_key=None):
         """Try to obtain session token"""
@@ -75,7 +75,7 @@ class MediaFireClient(object):
         logger.debug("result: %s", session_token)
 
         # install session token back into api client
-        self.api.set_session_token(session_token)
+        self.api.session = session_token
 
     def get_resource_by_uri(self, uri):
         """Resolve remote path by mediafire uri

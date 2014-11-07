@@ -18,7 +18,7 @@ api = MediaFireApi()
 session = api.user_get_session_token(
     app_id=APP_ID, email=MEDIAFIRE_EMAIL, password=MEDIAFIRE_PASSWORD)
 
-api.set_session_token(session)
+api.session = session
 
 response = api.file_zip(keys="49v457pmu1wacb1,2c16gp40ad8orca")
 

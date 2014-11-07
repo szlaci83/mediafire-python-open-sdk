@@ -71,7 +71,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         self.http.mount('https://',
                         HTTPAdapter(max_retries=API_ERROR_MAX_RETRIES))
 
-        self._session_token = None
+        self._session = None
         self._action_tokens = {}
 
     @staticmethod
@@ -95,8 +95,8 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             session_token = self._action_tokens[action_token_type]
         else:
             using_action_token = False
-            if self._session_token:
-                session_token = self._session_token['session_token']
+            if self._session:
+                session_token = self._session['session_token']
 
         if session_token:
             params['session_token'] = session_token
@@ -107,11 +107,11 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
 
         query = urlencode([tuple([key, params[key]]) for key in keys])
 
-        if not using_action_token and self._session_token:
-            secret_key_mod = int(self._session_token['secret_key']) % 256
+        if not using_action_token and self._session:
+            secret_key_mod = int(self._session['secret_key']) % 256
 
             signature_base = (str(secret_key_mod) +
-                              self._session_token['time'] +
+                              self._session['time'] +
                               uri + '?' + query).encode('ascii')
 
             query += '&signature=' + hashlib.md5(signature_base).hexdigest()
@@ -220,41 +220,52 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         http://www.mediafire.com/developers/core_api/1.1/getting_started/#call_signature
         """
         # Don't regenerate the key if we have none
-        if self._session_token and 'secret_key' in self._session_token:
-            self._session_token['secret_key'] = (
-                int(self._session_token['secret_key']) * 16807) % 2147483647
+        if self._session and 'secret_key' in self._session:
+            self._session['secret_key'] = (
+                int(self._session['secret_key']) * 16807) % 2147483647
 
-    # TODO: rename to set_session() because set more than "session_token"
-    # Now: set_session_token({"session_token": "123",
-    #                         "other_data": "blah"})
-    # Should be: set_session({"session_token": "123",
-    #                         "other_data": "blah"})
-    def set_session_token(self, session_token=None):
+    @property
+    def session(self):
+        """Returns current session information"""
+        return self._session
+
+    @session.setter
+    def session(self, value):
         """Set session token
 
-        session_token -- dict returned by user/get_session_token"""
+        value -- dict returned by user/get_session_token"""
 
         # unset session token
-        if session_token is None:
-            self._session_token = None
+        if value is None:
+            self._session = None
             return
 
-        if type(session_token) is not dict:
-            raise ValueError("session_token is required")
+        if type(value) is not dict:
+            raise ValueError("session info is required")
 
-        session_token_cleaned = {}
+        session_parsed = {}
 
         for key in ["session_token", "time", "secret_key"]:
-            if key not in session_token:
+            if key not in value:
                 raise ValueError("Missing parameter: {}".format(key))
-            session_token_cleaned[key] = session_token[key]
+            session_parsed[key] = value[key]
 
         for key in ["ekey", "pkey"]:
             # nice to have, but not mandatory
-            if key in session_token:
-                session_token_cleaned[key] = session_token[key]
+            if key in value:
+                session_parsed[key] = value[key]
 
-        self._session_token = session_token_cleaned
+        self._session = session_parsed
+
+    @session.deleter
+    def session(self):
+        """Unset session"""
+        self._session = None
+
+    # TODO: Remove in 0.5
+    def set_session_token(self, session_token=None):
+        """DEPRECTATED, use api.session = session_token"""
+        self.session = session_token
 
     def set_action_token(self, type_=None, action_token=None):
         """Set action tokens
