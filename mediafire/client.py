@@ -407,7 +407,8 @@ class MediaFireClient(object):
                 # Handling fs open/close
                 fd = open(source, 'rb')
 
-            return MediaFireUploader(self.api).upload(fd, name, folder_key)
+            return MediaFireUploader(self.api).upload(fd, name,
+                                                      folder_key=folder_key)
         finally:
             # Close filehandle if we opened it
             if fd and not is_fh:
