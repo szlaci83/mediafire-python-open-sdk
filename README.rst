@@ -139,6 +139,18 @@ single `upload` method to make things easier:
 
     pprint(api.file_get_info(result.quickkey))
 
+``result`` is a ``mediafire.uploader.UploadResult`` instance.
+
+FileDrop
+--------
+
+For FileDrop uploads (i.e. when filedrop_key is used) only ``upload/instant``
+result has quickkey. ``upload/instant`` and ``upload/resumable`` return
+``None`` for all the fields, since ``upload/poll`` [does not support]
+encrypted upload key.
+
+.. _does not support: http://forum.mediafiredev.com/showthread.php?293-FileDrop-upload-instant-w-o-session-succeeds-and-fails-at-the-same-time&p=478&viewfull=1#post478
+
 ================================
 mediafire.client.MediaFireClient
 ================================
