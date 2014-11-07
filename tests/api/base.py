@@ -10,12 +10,15 @@ class MediaFireApiTestCase(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(MediaFireApiTestCase, self).__init__(*args, **kwargs)
-        self.action = None
+
+    @staticmethod
+    def build_url(action):
+        """Build full URL from action"""
+        return API_BASE + '/api/' + API_VER + '/' + action + '.php'
 
     def setUp(self, session_token=None):
         """Set up test"""
-        self.url = API_BASE + '/api/' + API_VER + '/' + self.action + '.php'
-        self.client = MediaFireApi()
+        self.api = MediaFireApi()
 
     def load_response(self, filename):
         """Load stored response"""
@@ -41,4 +44,4 @@ class MediaFireApiTestCaseWithSessionToken(MediaFireApiTestCase):
                 'ekey': '54321',
             }
 
-        self.client.set_session_token(session_token)
+        self.api.set_session_token(session_token)

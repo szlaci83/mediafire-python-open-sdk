@@ -15,8 +15,8 @@ class TestUploadSimple(MediaFireApiTestCaseWithSessionToken):
     """upload/check tests"""
 
     def setUp(self):
-        self.action = "upload/simple"
         super(TestUploadSimple, self).setUp()
+        self.url = self.build_url("upload/simple")
 
     @responses.activate
     def test_header_encoding(self):
@@ -37,7 +37,7 @@ class TestUploadSimple(MediaFireApiTestCaseWithSessionToken):
         file_size = len(fd.read())
         fd.seek(0)
 
-        self.client.upload_simple(
+        self.api.upload_simple(
             fd, "тест.bin", file_size=file_size, file_hash='0')
 
         request = responses.calls[0].request
