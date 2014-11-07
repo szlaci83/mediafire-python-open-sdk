@@ -20,6 +20,9 @@ UPLOAD_RETRY_COUNT = 5
 # Upload polling interval in seconds
 UPLOAD_POLL_INTERVAL = 5
 
+# Length of upload key
+UPLOAD_KEY_LENGTH = 11
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -152,8 +155,7 @@ class MediaFireUploader(object):
                                   hash_=hash_, size=size, path=path,
                                   filedrop_key=filedrop_key)
 
-        # We cannot use resumable upload when uploading to filedrop
-        if size > UPLOAD_SIMPLE_LIMIT and filedrop_key is None:
+        if size > UPLOAD_SIMPLE_LIMIT:
             resumable = True
         else:
             resumable = False
@@ -215,6 +217,19 @@ class MediaFireUploader(object):
 
         upload_key -- upload_key returned by upload/* functions
         """
+
+        if len(upload_key) != UPLOAD_KEY_LENGTH:
+            # not a regular 11-char-long upload key
+            # There is no API to poll filedrop uploads
+            return UploadResult(
+                action=action,
+                quickkey=None,
+                hash_=None,
+                filename=None,
+                size=None,
+                created=None,
+                revision=None
+            )
 
         quick_key = None
         while quick_key is None:

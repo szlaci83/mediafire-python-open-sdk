@@ -18,7 +18,7 @@ from mediafire.uploader import MediaFireUploader
 
 
 class MediaFireUploaderTest(unittest.TestCase):
-    """Basic uploader tests"""
+    """Base class for uploader tests"""
 
     def setUp(self):
         """Set up uploader instance"""
@@ -31,6 +31,10 @@ class MediaFireUploaderTest(unittest.TestCase):
     def build_url(action):
         """Build full URL from action"""
         return API_BASE + '/api/' + API_VER + '/' + action + '.php'
+
+
+class MediaFireBasicUploaderTests(MediaFireUploaderTest):
+    """Basic uploader tests"""
 
     @responses.activate
     def test_existing_file_no_upload(self):
@@ -166,7 +170,7 @@ class MediaFireUploaderTest(unittest.TestCase):
                 "action": "upload/simple",
                 "doupload": {
                     "result": 0,
-                    "key": "1"
+                    "key": "12345678901"
                 },
                 "result": "Success"
             }
@@ -271,7 +275,7 @@ class MediaFireUploaderTest(unittest.TestCase):
                     "action": "upload/resumable",
                     "doupload": {
                         "result": "0",
-                        "key": "1"
+                        "key": "12345678901"
                     },
                     "resumable_upload": resumable_upload_node_mock(),
                     "result": "Success"
@@ -321,6 +325,91 @@ class MediaFireUploaderTest(unittest.TestCase):
         result = self.uploader.upload(fd, 'filename')
 
         self.assertEqual(result.quickkey, '123456789012345')
+
+
+class MediaFireFileDropUploadTests(MediaFireUploaderTest):
+    """FileDrop upload tests"""
+
+    @responses.activate
+    def test_upload_instant_returns_quickkey(self):
+        """Test that upload/instant returns quickkey"""
+
+        body = """{
+            "response": {
+                "action": "upload/check",
+                "duplicate_quickkey": "123456789012345",
+                "hash_exists": "yes",
+                "file_exists": "no",
+                "in_folder": "no",
+                "result": "Success"
+            }
+        }"""
+
+        responses.add(responses.POST, self.build_url("upload/check"),
+                      body=body, status=200, content_type='application/json')
+
+        body = """{
+            "response": {
+                "action": "upload/instant",
+                "device_revision": 4085,
+                "filename": "filename",
+                "quickkey": "123456789012345",
+                "result": "Success"
+            }
+        }"""
+
+        responses.add(responses.POST, self.build_url("upload/instant"),
+                      body=body, status=200, content_type='application/json')
+
+        fd = io.BytesIO(b'This is a test')
+
+        filedrop_key = 'a' * 64
+
+        result = self.uploader.upload(fd, 'filename',
+                                      filedrop_key=filedrop_key)
+
+        self.assertEqual(result.action, 'upload/instant')
+        self.assertEqual(result.quickkey, '123456789012345')
+
+    @responses.activate
+    def test_upload_simple_returns_something(self):
+        """Test that upload/simple with filedrop returns at least something"""
+        body = """{
+            "response": {
+                "action": "upload/check",
+                "hash_exists": "no",
+                "file_exists": "no",
+                "in_folder": "no",
+                "result": "Success"
+            }
+        }"""
+
+        responses.add(responses.POST, self.build_url("upload/check"),
+                      body=body, status=200, content_type='application/json')
+
+        body = """{
+            "response": {
+                "action": "upload/simple",
+                "doupload": {
+                    "key": "792a6c57869232ba9f52d9143aa5b43b"
+                },
+                "result": "Success"
+            }
+        }"""
+
+        responses.add(responses.POST, self.build_url("upload/simple"),
+                      body=body, status=200, content_type='application/json')
+
+        fd = io.BytesIO(b"This is a test string")
+
+        filedrop_key = 'a' * 64
+
+        result = self.uploader.upload(fd, 'filename',
+                                      filedrop_key=filedrop_key)
+
+        self.assertEqual(result.action, 'upload/simple')
+        self.assertIsNone(result.quickkey)
+
 
 if __name__ == "__main__":
     import logging
