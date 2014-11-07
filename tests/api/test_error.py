@@ -10,7 +10,7 @@ class TestErrorResponse(MediaFireApiTestCase):
 
     def __init__(self, *args, **kwargs):
         super(MediaFireApiTestCase, self).__init__(*args, **kwargs)
-        self.action = 'system/get_status'
+        self.url = self.build_url('system/get_status')
 
     @responses.activate
     def test_json_error(self):
@@ -26,7 +26,7 @@ class TestErrorResponse(MediaFireApiTestCase):
                       content_type="application/json")
 
         with self.assertRaises(MediaFireApiError):
-            self.client.request(self.action)
+            self.api.system_get_status()
 
     @responses.activate
     def test_json_in_xml_error(self):
@@ -42,7 +42,7 @@ class TestErrorResponse(MediaFireApiTestCase):
                       content_type="text/xml")
 
         with self.assertRaises(MediaFireApiError):
-            print(self.client.request(self.action))
+            self.api.system_get_status()
 
 if __name__ == "__main__":
     unittest.main()

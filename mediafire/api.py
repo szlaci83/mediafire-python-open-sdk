@@ -224,20 +224,35 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             self._session_token['secret_key'] = (
                 int(self._session_token['secret_key']) * 16807) % 2147483647
 
+    # TODO: rename to set_session() because set more than "session_token"
+    # Now: set_session_token({"session_token": "123",
+    #                         "other_data": "blah"})
+    # Should be: set_session({"session_token": "123",
+    #                         "other_data": "blah"})
     def set_session_token(self, session_token=None):
         """Set session token
 
         session_token -- dict returned by user/get_session_token"""
+
+        # unset session token
         if session_token is None:
+            self._session_token = None
+            return
+
+        if type(session_token) is not dict:
             raise ValueError("session_token is required")
 
         session_token_cleaned = {}
 
-        keys = ["session_token", "time", "secret_key", "ekey", "pkey"]
-        for key in keys:
+        for key in ["session_token", "time", "secret_key"]:
             if key not in session_token:
                 raise ValueError("Missing parameter: {}".format(key))
             session_token_cleaned[key] = session_token[key]
+
+        for key in ["ekey", "pkey"]:
+            # nice to have, but not mandatory
+            if key in session_token:
+                session_token_cleaned[key] = session_token[key]
 
         self._session_token = session_token_cleaned
 

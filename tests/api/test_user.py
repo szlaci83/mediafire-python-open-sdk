@@ -15,12 +15,12 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
     """Tests for user/get_session_token"""
 
     def setUp(self):
-        self.action = 'user/get_session_token'
         super(TestUserGetSessionToken, self).setUp()
+        self.url = self.build_url('user/get_session_token')
 
     def test_no_app_id_failure(self):
         with self.assertRaises(ValueError):
-            self.client.user_get_session_token(email='1', password='2')
+            self.api.user_get_session_token(email='1', password='2')
 
     @responses.activate
     def test_signature(self):
@@ -28,7 +28,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
 
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
-        self.client.user_get_session_token(
+        self.api.user_get_session_token(
             email='nobody@example.com', password='secret', app_id='0')
 
         query = responses.calls[0].request.body
@@ -45,7 +45,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
         api_key = 'b' * 40
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
-        self.client.user_get_session_token(
+        self.api.user_get_session_token(
             email='nobody@example.com', password='secret', app_id='0',
             api_key=api_key)
 
@@ -61,7 +61,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
 
-        session_token = self.client.user_get_session_token(
+        session_token = self.api.user_get_session_token(
             email='nobody@example.com', password='secret', app_id='0')
 
         self.assertTrue('session_token' in session_token)
@@ -71,8 +71,8 @@ class TestUserRenewSessionToken(MediaFireApiTestCaseWithSessionToken):
     """Test for user/renew_session_token"""
 
     def setUp(self):
-        self.action = 'user/renew_session_token'
         super(TestUserRenewSessionToken, self).setUp()
+        self.url = self.build_url('user/renew_session_token')
 
     @responses.activate
     def test_response(self):
@@ -81,7 +81,7 @@ class TestUserRenewSessionToken(MediaFireApiTestCaseWithSessionToken):
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
 
-        response = self.client.user_renew_session_token()
+        response = self.api.user_renew_session_token()
 
         self.assertEqual(response['session_token'], '123456')
 
@@ -90,8 +90,8 @@ class TestUserGetInfo(MediaFireApiTestCaseWithSessionToken):
     """Tests for user/get_info"""
 
     def setUp(self):
-        self.action = 'user/get_info'
         super(TestUserGetInfo, self).setUp()
+        self.url = self.build_url('user/get_info')
 
     @responses.activate
     def test_response(self):
@@ -100,7 +100,7 @@ class TestUserGetInfo(MediaFireApiTestCaseWithSessionToken):
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
 
-        response = self.client.user_get_info()
+        response = self.api.user_get_info()
 
         self.assertTrue('user_info' in response)
         self.assertEqual(response['user_info']['first_name'], 'John')

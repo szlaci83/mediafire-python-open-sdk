@@ -20,8 +20,6 @@ class TestV2CallSignature(MediaFireApiTestCase):
     """Test V2 Signature generation"""
     def setUp(self):
         """Set up test"""
-
-        self.action = 'user/get_info'
         super(TestV2CallSignature, self).setUp()
 
         session_token = {
@@ -31,7 +29,8 @@ class TestV2CallSignature(MediaFireApiTestCase):
             'pkey': '111',
             'ekey': '222',
         }
-        self.client.set_session_token(session_token)
+        self.api.set_session_token(session_token)
+        self.url = self.build_url('user/get_info')
 
     @responses.activate
     def test_signature_values(self):
@@ -46,9 +45,9 @@ class TestV2CallSignature(MediaFireApiTestCase):
         responses.add(responses.POST, self.url, body=body, status=200,
                       content_type="application/json")
         # original secret key
-        self.client.user_get_info()
+        self.api.user_get_info()
         # secret key is (1000000000 * 16807) % 2147483647 = 792978578
-        self.client.user_get_info()
+        self.api.user_get_info()
 
         query = responses.calls[0].request.body
         params = parse_qs(query)
@@ -93,10 +92,10 @@ class TestV2CallSignature(MediaFireApiTestCase):
 
         # Should return error
         with self.assertRaises(MediaFireApiError):
-            self.client.user_get_info()
+            self.api.user_get_info()
 
         # Should be successful
-        self.client.user_get_info()
+        self.api.user_get_info()
 
         query = responses.calls[1].request.body
         params = parse_qs(query)
