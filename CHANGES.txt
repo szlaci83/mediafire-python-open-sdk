@@ -1,3 +1,9 @@
+2014-11-07 Release 0.3.0
+ * Enable MediaFireApi and MediaFireUploader import from mediafire module
+ * Use session property instead of function call, allow unsetting the token
+ * Don't crash after FileDrop upload/simple, upload/resumable
+ * Update README
+
 2014-11-02 Release 0.2.0
  * Factor out uploader code
  * Python 2 support
