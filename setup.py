@@ -1,7 +1,8 @@
 from distutils.core import setup
 from pip.req import parse_requirements
+import uuid
 
-requirements = parse_requirements('requirements.txt')
+requirements = parse_requirements('requirements.txt', session=uuid.uuid1())
 install_requires = [str(r.req) for r in requirements]
 
 setup(
