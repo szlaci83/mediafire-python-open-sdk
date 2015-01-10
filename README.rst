@@ -48,8 +48,8 @@ Usage:
 
     # Or directly for methods that are not yet wrapped
     response = api.request("upload/add_web_upload", {
-        "url": "http://www.mediafire.com/images/brand-assets/mf-logo.png",
-        "filename": "mf-logo.png"})
+        "url": "http://forum.mediafiredev.com/images/mfforumlogo.png",
+        "filename": "mfforumlogo.png"})
 
     response = api.request("upload/get_web_uploads",
                            {"key": response['upload_key']})
