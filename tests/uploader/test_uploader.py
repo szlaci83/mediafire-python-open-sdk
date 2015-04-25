@@ -263,7 +263,8 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
         def upload_resumable_callback(request):
             """upload/resumable response generator"""
 
-            upload_resumable_callback.uploaded_bytes += len(request.body)
+            content_length = len(request.body.read())
+            upload_resumable_callback.uploaded_bytes += content_length
 
             if upload_resumable_callback.uploaded_bytes >= upload_size:
                 resumable_upload_node_mock.all_units_ready = 'yes'
