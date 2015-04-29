@@ -1,8 +1,12 @@
 language: python
 python:
-    - "2.7"
-    - "3.4"
+- '2.7'
+- '3.4'
 install:
-    - "pip install -r requirements.txt -I"
-    - "pip install -r test-requirements.txt -I"
+- pip install -r requirements.txt -I
+- pip install -r test-requirements.txt -I
 script: nosetests
+env:
+  global:
+  - secure: j5wtwtfkY5gIsVve+t/8GYSBxGVCD4jTeTStH2bDdvOsgn1iYlObwfrZoZy8yxWNE5q2JYuq16SoUUQG/HtsF/WiJaHn1bTvO81UHFTU4LU5ZDly36T3HdHCEehYI/3qkQA8o8PCdCg10BsCxg5C0b+FFeSA2E2y1vHfYEbXMCk=
+  - secure: casrynH0yC6oGAipo4lBHpJWMlYteu0Gx9l5bqlmkA6Gm492p15i1R290svDFWBM0byZ9YKpqFFxIKp96c/I/l439e9z7gB5hVQRR5PQLDgEgpWPUz7xvBdRIsOqLQJS9NXY6a2Vvr232vYrAsl9xBUSDhFOuH3lRy7MSeVgs/I=
