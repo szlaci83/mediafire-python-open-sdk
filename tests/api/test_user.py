@@ -36,7 +36,13 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
 
         self.assertEqual(params['signature'][0],
                          'b13f41f5728af85e99b119c1621bb3712e13c7ce')
-        pass
+
+    def test_missing_params(self):
+        with self.assertRaises(ValueError):
+            self.api.user_get_session_token()
+
+        with self.assertRaises(ValueError):
+            self.api.user_get_session_token(app_id='0')
 
     @responses.activate
     def test_signature_with_api_key(self):
