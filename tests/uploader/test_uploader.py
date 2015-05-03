@@ -8,13 +8,15 @@ import unittest
 import responses
 import json
 
+from six.moves.urllib.parse import urlparse, parse_qs
+
 if six.PY3:
     from unittest.mock import MagicMock
 elif six.PY2:
     from mock import MagicMock
 
 from mediafire.api import (MediaFireApi, API_BASE, API_VER)
-from mediafire.uploader import MediaFireUploader
+from mediafire.uploader import MediaFireUploader, UPLOAD_SIMPLE_LIMIT
 
 
 class MediaFireUploaderTest(unittest.TestCase):
@@ -24,8 +26,8 @@ class MediaFireUploaderTest(unittest.TestCase):
         """Set up uploader instance"""
 
         # Using unauthenticated API client
-        api = MediaFireApi()
-        self.uploader = MediaFireUploader(api)
+        self.api = MediaFireApi()
+        self.uploader = MediaFireUploader(self.api)
 
     @staticmethod
     def build_url(action):
@@ -87,7 +89,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
         body = """{
             "response": {
                 "action": "upload/instant",
-                "device_revision": 4085,
+                "new_device_revision": 4085,
                 "filename": "filename",
                 "quickkey": "123456789012345",
                 "result": "Success"
@@ -327,6 +329,201 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
 
         self.assertEqual(result.quickkey, '123456789012345')
 
+    @responses.activate
+    def test_upload_simple_action_on_duplicate(self):
+        """Test action_on_duplicate propagation"""
+
+        doc = {
+            "response": {
+                "action": "upload/check",
+                "hash_exists": "no",
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST, self.build_url("upload/check"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        doc = {
+            "response": {
+                "action": "upload/simple",
+                "doupload": {
+                    "result": 0,
+                    "key": "12345678901"
+                },
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST, self.build_url("upload/simple"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        doc = {
+            "response": {
+                "action": "upload/poll_upload",
+                "doupload": {
+                    "result": 0,
+                    "status": 99,
+                    "description": "No more requests for this key",
+                    "quickkey": "123456789012345",
+                    "size": 1,
+                    "revision": 1,
+                    "fileerror": "",
+                    "hash": "213...32",
+                    "filename": "filename.txt",
+                    "created": "2014-11-01 01:01:01"
+                },
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST,
+                      self.build_url("upload/poll_upload"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        fd = io.BytesIO(b"A")
+        self.uploader.upload(fd, 'filename.txt',
+                             action_on_duplicate='replace')
+
+        req_url = responses.calls[1].request.url
+        params = parse_qs(urlparse(req_url).query)
+        self.assertEqual(params['action_on_duplicate'][0], 'replace')
+
+    @responses.activate
+    def test_upload_instant_action_on_duplicate(self):
+        """Test action_on_duplicate propagation"""
+
+        doc = {
+            "response": {
+                "action": "upload/check",
+                "duplicate_quickkey": "123456789012345",
+                "hash_exists": "yes",
+                "file_exists": "no",
+                "in_folder": "no",
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST, self.build_url("upload/check"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        doc = {
+            "response": {
+                "action": "upload/instant",
+                "new_device_revision": 4086,
+                "quickkey": "123456789012345",
+                "filename": "filename.txt",
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST,
+                      self.build_url("upload/instant"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        fd = io.BytesIO(b"A")
+        self.uploader.upload(fd, 'filename.txt',
+                             action_on_duplicate='replace')
+
+        body = responses.calls[1].request.body
+        params = parse_qs(body)
+        self.assertEqual(params['action_on_duplicate'][0], 'replace')
+
+    @responses.activate
+    def test_upload_resumable_action_on_duplicate(self):
+        """Test action_on_duplicate propagation"""
+
+        content_length = UPLOAD_SIMPLE_LIMIT + 1
+
+        doc = {
+            "response": {
+                "action": "upload/check",
+                "hash_exists": "no",
+                "file_exists": "no",
+                "in_folder": "no",
+                "result": "Success",
+                "resumable_upload": {
+                    "all_units_ready": "no",
+                    "number_of_units": 1,
+                    "unit_size": content_length,
+                    "bitmap": {
+                        "count": "1",
+                        "words": [
+                            0
+                        ]
+                    }
+                },
+            }
+        }
+
+        responses.add(responses.POST, self.build_url("upload/check"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        doc = {
+            "response": {
+                "action": "upload/resumable",
+                "doupload": {
+                    "result": "0",
+                    "key": "12345678901"
+                },
+                "resumable_upload": {
+                    "all_units_ready": "yes",
+                    "number_of_units": 1,
+                    "unit_size": content_length,
+                    "bitmap": {
+                        "count": "1",
+                        "words": [
+                            1
+                        ]
+                    }
+                },
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST,
+                      self.build_url("upload/resumable"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        doc = {
+            "response": {
+                "action": "upload/poll_upload",
+                "doupload": {
+                    "result": 0,
+                    "status": 99,
+                    "description": "No more requests for this key",
+                    "quickkey": "123456789012345",
+                    "size": 1,
+                    "revision": 1,
+                    "fileerror": "",
+                    "hash": "213...32",
+                    "filename": "filename.txt",
+                    "created": "2014-11-01 01:01:01"
+                },
+                "result": "Success"
+            }
+        }
+
+        responses.add(responses.POST,
+                      self.build_url("upload/poll_upload"),
+                      body=json.dumps(doc), status=200,
+                      content_type='application/json')
+
+        fd = io.BytesIO(b"A" * content_length)
+        self.uploader.upload(fd, 'filename.txt',
+                             action_on_duplicate='replace')
+
+        req_url = responses.calls[1].request.url
+        params = parse_qs(urlparse(req_url).query)
+        self.assertEqual(params['action_on_duplicate'][0], 'replace')
+
 
 class MediaFireFileDropUploadTests(MediaFireUploaderTest):
     """FileDrop upload tests"""
@@ -352,7 +549,7 @@ class MediaFireFileDropUploadTests(MediaFireUploaderTest):
         body = """{
             "response": {
                 "action": "upload/instant",
-                "device_revision": 4085,
+                "new_device_revision": 4085,
                 "filename": "filename",
                 "quickkey": "123456789012345",
                 "result": "Success"

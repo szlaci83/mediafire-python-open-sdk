@@ -31,7 +31,8 @@ class _UploadInfo(object):
     """Structure containing upload details"""
 
     def __init__(self, fd=None, name=None, folder_key=None, path=None,
-                 hash_=None, size=None, filedrop_key=None):
+                 hash_=None, size=None, filedrop_key=None,
+                 action_on_duplicate=None):
         self.fd = fd
         self.name = name
         self.folder_key = folder_key
@@ -39,6 +40,7 @@ class _UploadInfo(object):
         self.hash_ = hash_
         self.size = size
         self.filedrop_key = filedrop_key
+        self.action_on_duplicate = action_on_duplicate
 
 
 class _UploadUnitInfo(object):
@@ -130,7 +132,7 @@ class MediaFireUploader(object):
 
     # pylint: disable=too-many-arguments
     def upload(self, fd, name=None, folder_key=None, filedrop_key=None,
-               path=None, hash_=None):
+               path=None, hash_=None, action_on_duplicate=None):
         """Upload file, returns UploadResult object
 
         fd -- file-like object to upload from, expects exclusive access
@@ -139,6 +141,7 @@ class MediaFireUploader(object):
         path -- path to file relative to folder_key
         hash_ -- SHA256 of contents
         filedrop_key -- filedrop to use instead of folder_key
+        action_on_duplicate -- skip, keep, replace
         """
 
         # Allow supplying stored hash
@@ -153,7 +156,8 @@ class MediaFireUploader(object):
 
         upload_info = _UploadInfo(fd=fd, name=name, folder_key=folder_key,
                                   hash_=hash_, size=size, path=path,
-                                  filedrop_key=filedrop_key)
+                                  filedrop_key=filedrop_key,
+                                  action_on_duplicate=action_on_duplicate)
 
         if size > UPLOAD_SIMPLE_LIMIT:
             resumable = True
@@ -278,14 +282,15 @@ class MediaFireUploader(object):
             upload_info.hash_,
             path=upload_info.path,
             folder_key=upload_info.folder_key,
-            filedrop_key=upload_info.filedrop_key
+            filedrop_key=upload_info.filedrop_key,
+            action_on_duplicate=upload_info.action_on_duplicate
         )
 
         return UploadResult(
             action='upload/instant',
             quickkey=result['quickkey'],
             filename=result['filename'],
-            revision=result['device_revision'],
+            revision=result['new_device_revision'],
             hash_=upload_info.hash_,
             size=upload_info.size,
             created=None
@@ -306,7 +311,8 @@ class MediaFireUploader(object):
             filedrop_key=upload_info.filedrop_key,
             path=upload_info.path,
             file_size=upload_info.size,
-            file_hash=upload_info.hash_)
+            file_hash=upload_info.hash_,
+            action_on_duplicate=upload_info.action_on_duplicate)
 
         logger.debug("upload_result: %s", upload_result)
 
@@ -314,29 +320,30 @@ class MediaFireUploader(object):
 
         return self._poll_upload(upload_key, 'upload/simple')
 
-    def _upload_resumable_unit(self, upload_unit_info):
+    def _upload_resumable_unit(self, uu_info):
         """Upload a single unit and return raw upload/resumable result
 
-        unit_id -- ID of the current unit
+        uu_info -- UploadUnitInfo instance
         """
 
         # Get actual unit size
-        unit_size = upload_unit_info.fd.len
+        unit_size = uu_info.fd.len
 
-        if upload_unit_info.hash_ is None:
+        if uu_info.hash_ is None:
             # Calculate checksum of the unit
-            upload_unit_info.hash_ = self.sha256_digest(upload_unit_info.fd)
+            uu_info.hash_ = self.sha256_digest(uu_info.fd)
 
         return self._api.upload_resumable(
-            upload_unit_info.fd,
-            upload_unit_info.upload_info.size,
-            upload_unit_info.upload_info.hash_,
-            upload_unit_info.hash_,
-            upload_unit_info.uid,
+            uu_info.fd,
+            uu_info.upload_info.size,
+            uu_info.upload_info.hash_,
+            uu_info.hash_,
+            uu_info.uid,
             unit_size,
-            filedrop_key=upload_unit_info.upload_info.filedrop_key,
-            folder_key=upload_unit_info.upload_info.folder_key,
-            path=upload_unit_info.upload_info.path)
+            filedrop_key=uu_info.upload_info.filedrop_key,
+            folder_key=uu_info.upload_info.folder_key,
+            path=uu_info.upload_info.path,
+            action_on_duplicate=uu_info.upload_info.action_on_duplicate)
 
     def _upload_resumable_all(self, upload_info, bitmap,
                               number_of_units, unit_size):
