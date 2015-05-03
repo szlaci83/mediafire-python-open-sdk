@@ -11,8 +11,8 @@ from mediafire.api import MediaFireApiError
 from tests.api.base import MediaFireApiTestCase
 
 CALL_SIGNATURES = [
-    '94c813c787e6441d9e73314a400894fa',
-    'dba771fdd2739eda89ca03a06cdf4df7'
+    'e4136f4a1c006c3c561092737c9ccbb0',
+    'd074bbf8ae3d1337b13289901fc6c2e6'
 ]
 
 
