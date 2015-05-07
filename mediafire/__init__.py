@@ -7,5 +7,6 @@ __all__ = ["MediaFireApi",
 
 from mediafire.api import (MediaFireApi, MediaFireApiError)
 from mediafire.uploader import (MediaFireUploader, UploadSession)
-# The client has not yet graduated
+# The client, media has not yet graduated
 # from mediafire.client import (MediaFireClient, MediaFireError)
+# from mediafire.media import ConversionServerClient

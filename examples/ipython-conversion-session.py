@@ -5,10 +5,10 @@ import logging
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-from mediafire.conversion import MediaFireConversionApi
+from mediafire.media import ConversionServerClient
 
 APP_ID = '42511'
 
-conversion = MediaFireConversionApi()
+conversion = ConversionServerClient()
 
 print("Use 'conversion' object to interact with Image/Document Conversion API")
