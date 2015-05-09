@@ -173,7 +173,7 @@ This is a very thin layer on top of Image and Document conversion API.
 
     conv = ConversionServerClient()
 
-    response = conv.request('2004', 'm8d6blce79xhxl5', doc_type='i', size_id='1')
+    response = conv.request('2004', 'm8d6blce79xhxl5', 'i', size_id='1')
     with open('/tmp/example.jpg', 'rb') as fd:
         fd.write(response.content)
 
