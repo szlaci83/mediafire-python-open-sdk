@@ -68,7 +68,7 @@ class ConversionServerClient(object):
         response = self.http.get(url, stream=True)
 
         if response.status_code == 204:
-            raise ConversionServerError("Unable to fulfill request."
+            raise ConversionServerError("Unable to fulfill request. "
                                         "The document will not be converted.",
                                         response.status_code)
 
