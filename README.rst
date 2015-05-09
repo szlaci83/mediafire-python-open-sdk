@@ -159,9 +159,31 @@ encrypted upload key.
 
 .. _does not support: http://forum.mediafiredev.com/showthread.php?293-FileDrop-upload-instant-w-o-session-succeeds-and-fails-at-the-same-time&p=478&viewfull=1#post478
 
+======================================
+mediafire.media.ConversionServerClient
+======================================
+
+This API is subject to change
+
+This is a very thin layer on top of Image and Document conversion API.
+
+.. code-block:: python
+
+    from mediafire.media import ConversionServerClient
+
+    conv = ConversionServerClient()
+
+    response = conv.request('2004', 'm8d6blce79xhxl5', 'i', size_id='1')
+    with open('/tmp/example.jpg', 'rb') as fd:
+        fd.write(response.content)
+
+
+
 ================================
 mediafire.client.MediaFireClient
 ================================
+
+This API is subject to change
 
 High-level client library wraps API calls and presents simplified interface.
 
