@@ -10,7 +10,7 @@ setup(
     version='0.4.0',
     author='Roman Yepishev',
     author_email='roman.yepishev@gmail.com',
-    packages=['mediafire'],
+    packages=['mediafire', 'mediafire.media'],
     url='https://github.com/MediaFire/mediafire-python-open-sdk',
     license='BSD',
     description='Python MediaFire client library',
