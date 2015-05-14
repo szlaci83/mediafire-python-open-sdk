@@ -10,6 +10,7 @@ import time
 from collections import namedtuple
 
 from mediafire.subsetio import SubsetIO
+from mediafire.api import MediaFireConnectionError
 
 # Use resumable upload if file is larger than 4Mb
 UPLOAD_SIMPLE_LIMIT = 4 * 1024 * 1024
@@ -22,6 +23,10 @@ UPLOAD_POLL_INTERVAL = 5
 
 # Length of upload key
 UPLOAD_KEY_LENGTH = 11
+
+# File upload statuses
+STATUS_NO_MORE_REQUESTS = 99
+STATUS_UPLOAD_IN_PROGRESS = 17
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -80,6 +85,16 @@ class UploadSession(object):  # pylint: disable=too-few-public-methods
     def __exit__(self, *exc_details):
         """Destroys action token"""
         self._api.user_destroy_action_token(action_token=self.action_token)
+
+
+class UploadError(Exception):
+    """Basic upload error"""
+    pass
+
+
+class RetriableUploadError(UploadError):
+    """Retriable upload error"""
+    pass
 
 
 def decode_resumable_upload_bitmap(bitmap_node, number_of_units):
@@ -176,6 +191,7 @@ class MediaFireUploader(object):
             )
 
         upload_result = None
+        upload_func = None
 
         folder_key = check_result.get('folder_key', None)
         if folder_key is not None:
@@ -191,27 +207,33 @@ class MediaFireUploader(object):
                 different_hash = check_result.get('different_hash', 'no')
                 if different_hash == 'no':
                     # file is already there
-                    upload_result = UploadResult(
-                        action=None,
-                        quickkey=check_result['duplicate_quickkey'],
-                        hash_=upload_info.hash_,
-                        filename=name,
-                        size=upload_info.size,
-                        created=None,
-                        revision=None
-                    )
+                    upload_func = self._upload_none
 
-            if not upload_result:
+            if not upload_func:
                 # different hash or in other folder
-                upload_result = self._upload_instant(upload_info)
+                upload_func = self._upload_instant
 
-        if not upload_result:
+        if not upload_func:
             if resumable:
                 # Provide check_result to avoid calling API twice
-                upload_result = self._upload_resumable(upload_info,
-                                                       check_result)
+                upload_func = self._upload_resumable
             else:
-                upload_result = self._upload_simple(upload_info)
+                upload_func = self._upload_simple
+
+        # Retry retriable exceptions
+        retries = UPLOAD_RETRY_COUNT
+        while retries > 0:
+            try:
+                upload_result = upload_func(upload_info, check_result)
+            except (RetriableUploadError, MediaFireConnectionError) as e:
+                retries -= 1
+                logger.warning("%s failed: %s (%d retries left)",
+                               upload_func, e, retries)
+            except Exception:
+                logger.exception("%s failed", upload_func)
+                break
+            else:
+                break
 
         return upload_result
     # pylint: enable=too-many-arguments
@@ -245,17 +267,21 @@ class MediaFireUploader(object):
                 logger.warning("result=%d", int(doupload['result']))
                 break
 
+            logger.debug("status=%d description=%s",
+                         int(doupload['status']), doupload['description'])
+
             if doupload['fileerror'] != '':
                 # TODO: we may have to handle this a bit more dramatically
                 logger.warning("fileerror=%d", int(doupload['fileerror']))
                 break
 
-            if int(doupload['status']) == 99:
+            if int(doupload['status']) == STATUS_NO_MORE_REQUESTS:
                 quick_key = doupload['quickkey']
+            elif int(doupload['status']) == STATUS_UPLOAD_IN_PROGRESS:
+                # BUG: http://forum.mediafiredev.com/showthread.php?588
+                raise RetriableUploadError("Invalid state transition (%s)",
+                                           doupload['description'])
             else:
-                logger.debug("status=%d description=%s",
-                             int(doupload['status']), doupload['description'])
-
                 time.sleep(UPLOAD_POLL_INTERVAL)
 
         return UploadResult(
@@ -268,12 +294,25 @@ class MediaFireUploader(object):
             revision=doupload['revision']
         )
 
-    def _upload_instant(self, upload_info):
+    def _upload_none(self, upload_info, check_result):
+        """Dummy upload function for when we don't actually upload"""
+        return UploadResult(
+            action=None,
+            quickkey=check_result['duplicate_quickkey'],
+            hash_=upload_info.hash_,
+            filename=upload_info.name,
+            size=upload_info.size,
+            created=None,
+            revision=None
+        )
+
+    def _upload_instant(self, upload_info, check_result=None):
         """Instant upload and return quickkey
 
         Can be used when the file is already stored somewhere in MediaFire
 
         upload_info -- UploadInfo object
+        check_result -- ignored
         """
 
         result = self._api.upload_instant(
@@ -296,12 +335,13 @@ class MediaFireUploader(object):
             created=None
         )
 
-    def _upload_simple(self, upload_info):
+    def _upload_simple(self, upload_info, check_result=None):
         """Simple upload and return quickkey
 
         Can be used for small files smaller than UPLOAD_SIMPLE_LIMIT
 
         upload_info -- UploadInfo object
+        check_result -- ignored
         """
 
         upload_result = self._api.upload_simple(
