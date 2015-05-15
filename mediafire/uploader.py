@@ -180,15 +180,7 @@ class MediaFireUploader(object):
             resumable = False
 
         # Check whether file is present
-        check_result = self._api.upload_check(
-            filename=upload_info.name,
-            size=upload_info.size,
-            hash_=upload_info.hash_,
-            folder_key=upload_info.folder_key,
-            filedrop_key=upload_info.filedrop_key,
-            path=upload_info.path,
-            resumable=resumable
-            )
+        check_result = self._upload_check(upload_info, resumable)
 
         upload_result = None
         upload_func = None
@@ -227,6 +219,8 @@ class MediaFireUploader(object):
                 upload_result = upload_func(upload_info, check_result)
             except (RetriableUploadError, MediaFireConnectionError) as e:
                 retries -= 1
+                # Refresh check_result
+                check_result = self._upload_check(upload_info, resumable)
                 logger.warning("%s failed: %s (%d retries left)",
                                upload_func, e, retries)
             except Exception:
@@ -234,6 +228,9 @@ class MediaFireUploader(object):
                 break
             else:
                 break
+
+        if upload_result is None:
+            raise UploadError("Upload failed")
 
         return upload_result
     # pylint: enable=too-many-arguments
@@ -292,6 +289,18 @@ class MediaFireUploader(object):
             size=doupload['size'],
             created=doupload['created'],
             revision=doupload['revision']
+        )
+
+    def _upload_check(self, upload_info, resumable):
+        """Wrapper around upload/check"""
+        return self._api.upload_check(
+            filename=upload_info.name,
+            size=upload_info.size,
+            hash_=upload_info.hash_,
+            folder_key=upload_info.folder_key,
+            filedrop_key=upload_info.filedrop_key,
+            path=upload_info.path,
+            resumable=resumable
         )
 
     def _upload_none(self, upload_info, check_result):
