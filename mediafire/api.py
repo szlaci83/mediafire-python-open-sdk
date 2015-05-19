@@ -13,6 +13,8 @@ from six.moves.urllib.parse import urlencode
 from requests_toolbelt import MultipartEncoder
 from requests.adapters import HTTPAdapter
 
+from requests.exceptions import RequestException
+
 API_BASE = 'https://www.mediafire.com'
 API_VER = '1.3'
 
@@ -48,7 +50,12 @@ class QueryParams(dict):
             dict.__setitem__(self, key, value)
 
 
-class MediaFireApiError(Exception):
+class MediaFireError(Exception):
+    """Base class for MediaFire-related errors"""
+    pass
+
+
+class MediaFireApiError(MediaFireError):
     """Base class for API errors"""
     def __init__(self, message, code=None):
         """Initialize exception"""
@@ -59,6 +66,11 @@ class MediaFireApiError(Exception):
     def __str__(self):
         """Stringify exception"""
         return "{}: {}".format(self.code, self.message)
+
+
+class MediaFireConnectionError(MediaFireError):
+    """Low level connection errors"""
+    pass
 
 
 class MediaFireApi(object):  # pylint: disable=too-many-public-methods
@@ -165,8 +177,13 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         logger.debug("uri=%s query=%s",
                      uri, query if not upload_info else None)
 
-        response = self.http.post(API_BASE + uri, data=data,
-                                  headers=headers, stream=True)
+        try:
+            response = self.http.post(API_BASE + uri, data=data,
+                                      headers=headers, stream=True)
+        except RequestException as e:
+            logger.exception("HTTP request failed")
+            raise MediaFireConnectionError(
+                "RequestException: {}".format(e))
 
         return self._process_response(response)
 

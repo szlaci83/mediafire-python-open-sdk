@@ -10,6 +10,7 @@ import time
 from collections import namedtuple
 
 from mediafire.subsetio import SubsetIO
+from mediafire.api import MediaFireConnectionError
 
 # Use resumable upload if file is larger than 4Mb
 UPLOAD_SIMPLE_LIMIT = 4 * 1024 * 1024
@@ -22,6 +23,10 @@ UPLOAD_POLL_INTERVAL = 5
 
 # Length of upload key
 UPLOAD_KEY_LENGTH = 11
+
+# File upload statuses
+STATUS_NO_MORE_REQUESTS = 99
+STATUS_UPLOAD_IN_PROGRESS = 17
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -80,6 +85,16 @@ class UploadSession(object):  # pylint: disable=too-few-public-methods
     def __exit__(self, *exc_details):
         """Destroys action token"""
         self._api.user_destroy_action_token(action_token=self.action_token)
+
+
+class UploadError(Exception):
+    """Basic upload error"""
+    pass
+
+
+class RetriableUploadError(UploadError):
+    """Retriable upload error"""
+    pass
 
 
 def decode_resumable_upload_bitmap(bitmap_node, number_of_units):
@@ -165,17 +180,10 @@ class MediaFireUploader(object):
             resumable = False
 
         # Check whether file is present
-        check_result = self._api.upload_check(
-            filename=upload_info.name,
-            size=upload_info.size,
-            hash_=upload_info.hash_,
-            folder_key=upload_info.folder_key,
-            filedrop_key=upload_info.filedrop_key,
-            path=upload_info.path,
-            resumable=resumable
-            )
+        check_result = self._upload_check(upload_info, resumable)
 
         upload_result = None
+        upload_func = None
 
         folder_key = check_result.get('folder_key', None)
         if folder_key is not None:
@@ -191,27 +199,38 @@ class MediaFireUploader(object):
                 different_hash = check_result.get('different_hash', 'no')
                 if different_hash == 'no':
                     # file is already there
-                    upload_result = UploadResult(
-                        action=None,
-                        quickkey=check_result['duplicate_quickkey'],
-                        hash_=upload_info.hash_,
-                        filename=name,
-                        size=upload_info.size,
-                        created=None,
-                        revision=None
-                    )
+                    upload_func = self._upload_none
 
-            if not upload_result:
+            if not upload_func:
                 # different hash or in other folder
-                upload_result = self._upload_instant(upload_info)
+                upload_func = self._upload_instant
 
-        if not upload_result:
+        if not upload_func:
             if resumable:
                 # Provide check_result to avoid calling API twice
-                upload_result = self._upload_resumable(upload_info,
-                                                       check_result)
+                upload_func = self._upload_resumable
             else:
-                upload_result = self._upload_simple(upload_info)
+                upload_func = self._upload_simple
+
+        # Retry retriable exceptions
+        retries = UPLOAD_RETRY_COUNT
+        while retries > 0:
+            try:
+                upload_result = upload_func(upload_info, check_result)
+            except (RetriableUploadError, MediaFireConnectionError):
+                retries -= 1
+                logger.exception("%s failed (%d retries left)",
+                                 upload_func.__name__, retries)
+                # Refresh check_result for next iteration
+                check_result = self._upload_check(upload_info, resumable)
+            except Exception:
+                logger.exception("%s failed", upload_func)
+                break
+            else:
+                break
+
+        if upload_result is None:
+            raise UploadError("Upload failed")
 
         return upload_result
     # pylint: enable=too-many-arguments
@@ -238,24 +257,33 @@ class MediaFireUploader(object):
         quick_key = None
         while quick_key is None:
             poll_result = self._api.upload_poll(upload_key)
-            logger.debug("poll(%s): %s", upload_key, poll_result)
-
             doupload = poll_result['doupload']
+
+            logger.debug("poll(%s): status=%d, description=%s, filename=%s,"
+                         " result=%d",
+                         upload_key, int(doupload['status']),
+                         doupload['description'], doupload['filename'],
+                         int(doupload['result']))
+
             if int(doupload['result']) != 0:
-                logger.warning("result=%d", int(doupload['result']))
                 break
 
             if doupload['fileerror'] != '':
                 # TODO: we may have to handle this a bit more dramatically
-                logger.warning("fileerror=%d", int(doupload['fileerror']))
+                logger.warning("poll(%s): fileerror=%d", upload_key,
+                               int(doupload['fileerror']))
                 break
 
-            if int(doupload['status']) == 99:
+            if int(doupload['status']) == STATUS_NO_MORE_REQUESTS:
                 quick_key = doupload['quickkey']
+            elif int(doupload['status']) == STATUS_UPLOAD_IN_PROGRESS:
+                # BUG: http://forum.mediafiredev.com/showthread.php?588
+                raise RetriableUploadError(
+                    "Invalid state transition ({})".format(
+                        doupload['description']
+                    )
+                )
             else:
-                logger.debug("status=%d description=%s",
-                             int(doupload['status']), doupload['description'])
-
                 time.sleep(UPLOAD_POLL_INTERVAL)
 
         return UploadResult(
@@ -268,12 +296,37 @@ class MediaFireUploader(object):
             revision=doupload['revision']
         )
 
-    def _upload_instant(self, upload_info):
+    def _upload_check(self, upload_info, resumable):
+        """Wrapper around upload/check"""
+        return self._api.upload_check(
+            filename=upload_info.name,
+            size=upload_info.size,
+            hash_=upload_info.hash_,
+            folder_key=upload_info.folder_key,
+            filedrop_key=upload_info.filedrop_key,
+            path=upload_info.path,
+            resumable=resumable
+        )
+
+    def _upload_none(self, upload_info, check_result):
+        """Dummy upload function for when we don't actually upload"""
+        return UploadResult(
+            action=None,
+            quickkey=check_result['duplicate_quickkey'],
+            hash_=upload_info.hash_,
+            filename=upload_info.name,
+            size=upload_info.size,
+            created=None,
+            revision=None
+        )
+
+    def _upload_instant(self, upload_info, check_result=None):
         """Instant upload and return quickkey
 
         Can be used when the file is already stored somewhere in MediaFire
 
         upload_info -- UploadInfo object
+        check_result -- ignored
         """
 
         result = self._api.upload_instant(
@@ -296,12 +349,13 @@ class MediaFireUploader(object):
             created=None
         )
 
-    def _upload_simple(self, upload_info):
+    def _upload_simple(self, upload_info, check_result=None):
         """Simple upload and return quickkey
 
         Can be used for small files smaller than UPLOAD_SIMPLE_LIMIT
 
         upload_info -- UploadInfo object
+        check_result -- ignored
         """
 
         upload_result = self._api.upload_simple(
@@ -364,11 +418,11 @@ class MediaFireUploader(object):
                 bitmap, number_of_units)
 
             if upload_status[unit_id]:
-                logger.debug("Unit %d of %d already uploaded, skipping",
+                logger.debug("Skipping unit %d/%d - already uploaded",
                              unit_id + 1, number_of_units)
                 continue
 
-            logger.debug("Uploading unit %d of %d",
+            logger.debug("Uploading unit %d/%d",
                          unit_id + 1, number_of_units)
 
             offset = unit_id * unit_size
@@ -399,38 +453,34 @@ class MediaFireUploader(object):
         unit_size = int(resumable_upload['unit_size'])
         number_of_units = int(resumable_upload['number_of_units'])
 
-        logger.debug("Uploading %d units %d bytes each",
+        logger.debug("Preparing %d units * %d bytes",
                      number_of_units, unit_size)
 
         upload_key = None
-        retry_count = 0
+        retries = UPLOAD_RETRY_COUNT
 
         all_units_ready = resumable_upload['all_units_ready'] == 'yes'
         bitmap = resumable_upload['bitmap']
 
-        while not all_units_ready and retry_count < UPLOAD_RETRY_COUNT:
-            logger.debug("Attempt #%d", retry_count + 1)
-
+        while not all_units_ready and retries > 0:
             upload_key = self._upload_resumable_all(upload_info, bitmap,
                                                     number_of_units, unit_size)
 
-            check_result = self._api.upload_check(
-                filename=upload_info.name,
-                size=upload_info.size,
-                hash_=upload_info.hash_,
-                folder_key=upload_info.folder_key,
-                filedrop_key=upload_info.filedrop_key,
-                path=upload_info.path,
-                resumable='yes')
+            check_result = self._upload_check(upload_info, 'yes')
 
             resumable_upload = check_result['resumable_upload']
             all_units_ready = resumable_upload['all_units_ready'] == 'yes'
             bitmap = resumable_upload['bitmap']
 
             if not all_units_ready:
-                logger.debug("Not all units uploaded")
-                retry_count += 1
+                retries -= 1
+                logger.debug("Some units failed to upload (%d retries left)",
+                             retries)
 
-        logger.debug("Upload complete. polling for status")
+        if not all_units_ready:
+            # Most likely non-retriable
+            raise UploadError("Could not upload all units")
+
+        logger.debug("Upload complete, polling for status")
 
         return self._poll_upload(upload_key, 'upload/resumable')

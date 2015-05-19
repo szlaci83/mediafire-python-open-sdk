@@ -440,30 +440,39 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
 
         content_length = UPLOAD_SIMPLE_LIMIT + 1
 
-        doc = {
-            "response": {
-                "action": "upload/check",
-                "hash_exists": "no",
-                "file_exists": "no",
-                "in_folder": "no",
-                "result": "Success",
-                "resumable_upload": {
-                    "all_units_ready": "no",
-                    "number_of_units": 1,
-                    "unit_size": content_length,
-                    "bitmap": {
-                        "count": "1",
-                        "words": [
-                            0
-                        ]
-                    }
-                },
+        def upload_check_callback(request):
+            doc = {
+                "response": {
+                    "action": "upload/check",
+                    "hash_exists": "no",
+                    "file_exists": "no",
+                    "in_folder": "no",
+                    "result": "Success",
+                    "resumable_upload": {
+                        "all_units_ready":
+                            upload_check_callback.all_units_ready,
+                        "number_of_units": 1,
+                        "unit_size": content_length,
+                        "bitmap": {
+                            "count": "1",
+                            "words":
+                                upload_check_callback.words
+                        }
+                    },
+                }
             }
-        }
 
-        responses.add(responses.POST, self.build_url("upload/check"),
-                      body=json.dumps(doc), status=200,
-                      content_type='application/json')
+            upload_check_callback.words = [1]
+            upload_check_callback.all_units_ready = 'yes'
+
+            return (200, {}, json.dumps(doc))
+
+        upload_check_callback.words = [0]
+        upload_check_callback.all_units_ready = 'no'
+
+        responses.add_callback(
+            responses.POST, self.build_url("upload/check"),
+            callback=upload_check_callback, content_type='application/json')
 
         doc = {
             "response": {
