@@ -182,7 +182,8 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                                       headers=headers, stream=True)
         except RequestException as e:
             logger.exception("HTTP request failed")
-            raise MediaFireConnectionError("RequestException: %s", e)
+            raise MediaFireConnectionError(
+                "RequestException: {}".format(e))
 
         return self._process_response(response)
 
