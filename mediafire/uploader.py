@@ -217,12 +217,12 @@ class MediaFireUploader(object):
         while retries > 0:
             try:
                 upload_result = upload_func(upload_info, check_result)
-            except (RetriableUploadError, MediaFireConnectionError) as e:
+            except (RetriableUploadError, MediaFireConnectionError):
                 retries -= 1
-                # Refresh check_result
+                logger.exception("%s failed (%d retries left)",
+                                 upload_func.__name__, retries)
+                # Refresh check_result for next iteration
                 check_result = self._upload_check(upload_info, resumable)
-                logger.warning("%s failed: %s (%d retries left)",
-                               upload_func, e, retries)
             except Exception:
                 logger.exception("%s failed", upload_func)
                 break
@@ -257,27 +257,32 @@ class MediaFireUploader(object):
         quick_key = None
         while quick_key is None:
             poll_result = self._api.upload_poll(upload_key)
-            logger.debug("poll(%s): %s", upload_key, poll_result)
-
             doupload = poll_result['doupload']
-            if int(doupload['result']) != 0:
-                logger.warning("result=%d", int(doupload['result']))
-                break
 
-            logger.debug("status=%d description=%s",
-                         int(doupload['status']), doupload['description'])
+            logger.debug("poll(%s): status=%d, description=%s, filename=%s,"
+                         " result=%d",
+                         upload_key, int(doupload['status']),
+                         doupload['description'], doupload['filename'],
+                         int(doupload['result']))
+
+            if int(doupload['result']) != 0:
+                break
 
             if doupload['fileerror'] != '':
                 # TODO: we may have to handle this a bit more dramatically
-                logger.warning("fileerror=%d", int(doupload['fileerror']))
+                logger.warning("poll(%s): fileerror=%d", upload_key,
+                               int(doupload['fileerror']))
                 break
 
             if int(doupload['status']) == STATUS_NO_MORE_REQUESTS:
                 quick_key = doupload['quickkey']
             elif int(doupload['status']) == STATUS_UPLOAD_IN_PROGRESS:
                 # BUG: http://forum.mediafiredev.com/showthread.php?588
-                raise RetriableUploadError("Invalid state transition (%s)",
-                                           doupload['description'])
+                raise RetriableUploadError(
+                    "Invalid state transition ({})".format(
+                        doupload['description']
+                    )
+                )
             else:
                 time.sleep(UPLOAD_POLL_INTERVAL)
 
@@ -413,11 +418,11 @@ class MediaFireUploader(object):
                 bitmap, number_of_units)
 
             if upload_status[unit_id]:
-                logger.debug("Unit %d of %d already uploaded, skipping",
+                logger.debug("Skipping unit %d/%d - already uploaded",
                              unit_id + 1, number_of_units)
                 continue
 
-            logger.debug("Uploading unit %d of %d",
+            logger.debug("Uploading unit %d/%d",
                          unit_id + 1, number_of_units)
 
             offset = unit_id * unit_size
@@ -448,38 +453,34 @@ class MediaFireUploader(object):
         unit_size = int(resumable_upload['unit_size'])
         number_of_units = int(resumable_upload['number_of_units'])
 
-        logger.debug("Uploading %d units %d bytes each",
+        logger.debug("Preparing %d units * %d bytes",
                      number_of_units, unit_size)
 
         upload_key = None
-        retry_count = 0
+        retries = UPLOAD_RETRY_COUNT
 
         all_units_ready = resumable_upload['all_units_ready'] == 'yes'
         bitmap = resumable_upload['bitmap']
 
-        while not all_units_ready and retry_count < UPLOAD_RETRY_COUNT:
-            logger.debug("Attempt #%d", retry_count + 1)
-
+        while not all_units_ready and retries > 0:
             upload_key = self._upload_resumable_all(upload_info, bitmap,
                                                     number_of_units, unit_size)
 
-            check_result = self._api.upload_check(
-                filename=upload_info.name,
-                size=upload_info.size,
-                hash_=upload_info.hash_,
-                folder_key=upload_info.folder_key,
-                filedrop_key=upload_info.filedrop_key,
-                path=upload_info.path,
-                resumable='yes')
+            check_result = self._upload_check(upload_info, 'yes')
 
             resumable_upload = check_result['resumable_upload']
             all_units_ready = resumable_upload['all_units_ready'] == 'yes'
             bitmap = resumable_upload['bitmap']
 
             if not all_units_ready:
-                logger.debug("Not all units uploaded")
-                retry_count += 1
+                retries -= 1
+                logger.debug("Some units failed to upload (%d retries left)",
+                             retries)
 
-        logger.debug("Upload complete. polling for status")
+        if not all_units_ready:
+            # Most likely non-retriable
+            raise UploadError("Could not upload all units")
+
+        logger.debug("Upload complete, polling for status")
 
         return self._poll_upload(upload_key, 'upload/resumable')
