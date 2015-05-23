@@ -1,3 +1,6 @@
+2015-05-22 Release 0.4.1
+ * Trap and retry upload exceptions - #16
+
 2015-05-09 Release 0.4.0
  * API: Update API_VER to 1.3 - #14
  * Uploader: Control overwriting files with action_on_overwrite - #12
