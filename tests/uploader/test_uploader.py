@@ -2,11 +2,12 @@
 
 from __future__ import unicode_literals
 
-import six
 import io
+import json
+import math
 import unittest
 import responses
-import json
+import six
 
 from six.moves.urllib.parse import urlparse, parse_qs
 
@@ -16,7 +17,9 @@ elif six.PY2:
     from mock import MagicMock
 
 from mediafire.api import (MediaFireApi, API_BASE, API_VER)
-from mediafire.uploader import MediaFireUploader, UPLOAD_SIMPLE_LIMIT
+from mediafire.uploader import (MediaFireUploader, UPLOAD_SIMPLE_LIMIT,
+                                get_resumable_upload_unit_size,
+                                get_hash_info)
 
 
 class MediaFireUploaderTest(unittest.TestCase):
@@ -212,19 +215,21 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
         """Test upload/resumable happy path"""
 
         upload_size = 4 * 1024 * 1024 + 2
-        unit_size = int(upload_size / 2)
-        number_of_units = 2
+        unit_size = 1024 * 1024
+        number_of_units = 5
 
         def resumable_upload_node_mock():
             """resumable_upload node generator"""
 
             word = 0
 
-            # bitmap table for 2 uploaded units
+            # bitmap table for 5 uploaded units
             word_values = {
                 0: 0,
                 1: 1,
-                2: 3
+                2: 3,
+                3: 7,
+                4: 15
             }
 
             word = word_values[
@@ -331,7 +336,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
 
     @responses.activate
     def test_upload_simple_action_on_duplicate(self):
-        """Test action_on_duplicate propagation"""
+        """Test action_on_duplicate propagation for upload/simple"""
 
         doc = {
             "response": {
@@ -394,7 +399,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
 
     @responses.activate
     def test_upload_instant_action_on_duplicate(self):
-        """Test action_on_duplicate propagation"""
+        """Test action_on_duplicate propagation for upload/instant"""
 
         doc = {
             "response": {
@@ -436,7 +441,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
 
     @responses.activate
     def test_upload_resumable_action_on_duplicate(self):
-        """Test action_on_duplicate propagation"""
+        """Test action_on_duplicate propagation for upload/resumable"""
 
         content_length = UPLOAD_SIMPLE_LIMIT + 1
 
@@ -451,8 +456,10 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
                     "resumable_upload": {
                         "all_units_ready":
                             upload_check_callback.all_units_ready,
-                        "number_of_units": 1,
-                        "unit_size": content_length,
+                        # UPLOAD_SIMPLE_LIMIT = 4MiB, min 4 units
+                        # one more byte gives us 5 units
+                        "number_of_units": 5,
+                        "unit_size": 1024 * 1024,
                         "bitmap": {
                             "count": "1",
                             "words":
@@ -462,7 +469,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
                 }
             }
 
-            upload_check_callback.words = [1]
+            upload_check_callback.words = [31]
             upload_check_callback.all_units_ready = 'yes'
 
             return (200, {}, json.dumps(doc))
@@ -483,12 +490,12 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
                 },
                 "resumable_upload": {
                     "all_units_ready": "yes",
-                    "number_of_units": 1,
-                    "unit_size": content_length,
+                    "number_of_units": 5,
+                    "unit_size": 1024 * 1024,
                     "bitmap": {
                         "count": "1",
                         "words": [
-                            1
+                            31
                         ]
                     }
                 },
@@ -616,6 +623,95 @@ class MediaFireFileDropUploadTests(MediaFireUploaderTest):
 
         self.assertEqual(result.action, 'upload/simple')
         self.assertIsNone(result.quickkey)
+
+
+class ResumableUploadLocalUnitSizeTests(unittest.TestCase):
+    """Tests for local calculation of resumable upload unit_sizes"""
+
+    def test_unit_size(self):
+        MEBIBYTE = 1024 * 1024
+        GIBIBYTE = MEBIBYTE * 1024
+
+        file_size_map = {
+            1:
+                1024 * 1024,
+            4 * MEBIBYTE:
+                1024 * 1024,
+            8 * MEBIBYTE:
+                1024 * 1024,
+            129740800:
+                4096 * 1024,
+            16 * GIBIBYTE:
+                65536 * 1024,
+            65 * GIBIBYTE:
+                65536 * 1024
+        }
+
+        for file_size, expected in file_size_map.items():
+            actual = get_resumable_upload_unit_size(file_size)
+            self.assertEqual(
+                actual,
+                expected,
+                "unit_size for {} - {}, expected {}".format(
+                    file_size, actual, expected)
+            )
+
+
+class MediaFireUploadHashingTests(unittest.TestCase):
+    """Tests for get_hash_info"""
+
+    def test_missing_unit_size(self):
+        """Test that hasher works with no unit_size"""
+
+        fd = io.BytesIO(b"hello world")
+        result = get_hash_info(fd)
+
+        self.assertEqual(
+            result.file,
+            'b94d27b9934d3e08a52e52d7da7dabfa'
+            'c484efe37a5380ee9088f7ace2efcde9'
+        )
+
+        self.assertListEqual(result.units, [])
+
+    def test_unit_size_hashing(self):
+        """Test that hasher returns units hashes as well"""
+        MEBIBYTE = 2 ** 20
+        # 4 MiB and 1 byte for leftover testing
+        DATA_SIZE = 4 * MEBIBYTE + 1
+
+        data = b'\0' * DATA_SIZE
+        fd = io.BytesIO(data)
+
+        unit_size = get_resumable_upload_unit_size(DATA_SIZE)
+        self.assertEqual(unit_size, MEBIBYTE)
+
+        result = get_hash_info(fd, unit_size)
+
+        self.assertEqual(
+            result.file,
+            '95e441ca65cd41fa01b2a71799e79fd6'
+            '0db59ed34f13af32a91e85f90378676c'
+        )
+
+        self.assertNotEqual(result.units, [])
+
+        print(math.ceil(1.0 * DATA_SIZE/unit_size))
+        self.assertEqual(
+            len(result.units),
+            math.ceil(1.0 * DATA_SIZE / unit_size)
+        )
+
+        MIB_ZERO_HASH = ('30e14955ebf1352266dc2ff8067e6810'
+                         '4607e750abb9d3b36582b8af909fcb58')
+
+        ZERO_BYTE_HASH = ('6e340b9cffb37a989ca544e6bb780a2c'
+                          '78901d3fb33738768511a30617afa01d')
+
+        for i in range(4):
+            self.assertEqual(result.units[i], MIB_ZERO_HASH)
+
+        self.assertEqual(result.units[4], ZERO_BYTE_HASH)
 
 
 if __name__ == "__main__":
