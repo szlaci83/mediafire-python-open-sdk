@@ -37,7 +37,8 @@ HASH_CHUNK_SIZE = 8192
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-# pylint: disable=too-few-public-methods,too-many-arguments,too-many-instance-attributes
+# pylint: disable=too-few-public-methods,too-many-arguments
+# pylint: disable=too-many-instance-attributes
 class _UploadInfo(object):
     """Structure containing upload details"""
 
@@ -207,23 +208,6 @@ class MediaFireUploader(object):
         api -- MediaFireApi instance
         """
         self._api = api
-
-    @staticmethod
-    def sha256_digest(fd):
-        """Get SHA256 digest of flehandle contents
-
-        fd - file-like object (expects exclusive access because of seeking)
-        """
-        fd.seek(0, os.SEEK_SET)
-
-        sha256sum = hashlib.sha256()
-        for chunk in iter(lambda: fd.read(8192), b''):
-            sha256sum.update(chunk)
-
-        fd.seek(0, os.SEEK_SET)
-
-        return sha256sum.hexdigest().lower()
-
 
     # pylint: disable=too-many-arguments
     def upload(self, fd, name=None, folder_key=None, filedrop_key=None,
