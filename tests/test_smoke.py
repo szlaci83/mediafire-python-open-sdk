@@ -6,14 +6,12 @@ import unittest
 import logging
 import uuid
 from mediafire import MediaFireApi, MediaFireUploader, UploadSession
+from mediafire.uploader import UPLOAD_SIMPLE_LIMIT_BYTES
 
 APP_ID = '42511'
 
 MEDIAFIRE_EMAIL = os.environ.get('MEDIAFIRE_EMAIL')
 MEDIAFIRE_PASSWORD = os.environ.get('MEDIAFIRE_PASSWORD')
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 class MediaFireSmokeBaseTestCase(object):
@@ -21,6 +19,10 @@ class MediaFireSmokeBaseTestCase(object):
 
     class BaseTest(unittest.TestCase):
         def setUp(self):
+            # Reset logging to info to avoid leaking credentials
+            logger = logging.getLogger('mediafire.api')
+            logger.setLevel(logging.INFO)
+
             self.api = MediaFireApi()
             session = self.api.user_get_session_token(
                 app_id=APP_ID, email=MEDIAFIRE_EMAIL,
@@ -64,14 +66,13 @@ class MediaFireSmokeWithDirectoryTest(MediaFireSmokeBaseTestCase.BaseTest):
             result = uploader.upload(fd, 'smallfile.txt',
                                      folder_key=self.folder_key)
 
-        quickkey = result.quickkey
-
-        self.assertIsNotNone(quickkey)
+        self.assertIsNotNone(result.quickkey)
+        self.assertEquals(result.action, 'upload/simple')
 
     def test_upload_large(self):
         """Test large file upload"""
-        # make sure we will get upload/resumable, around 5MB payload
-        data = b'Long line is long: ' + os.urandom(5 * 1024 * 1024)
+        # make sure we will get upload/resumable, prefix + 4MiB
+        data = b'Long line is long: ' + os.urandom(UPLOAD_SIMPLE_LIMIT_BYTES)
         fd = io.BytesIO(data)
 
         uploader = MediaFireUploader(self.api)
@@ -80,9 +81,8 @@ class MediaFireSmokeWithDirectoryTest(MediaFireSmokeBaseTestCase.BaseTest):
             result = uploader.upload(fd, 'bigfile.txt',
                                      folder_key=self.folder_key)
 
-        quickkey = result.quickkey
-
-        self.assertIsNotNone(quickkey)
+        self.assertIsNotNone(result.quickkey)
+        self.assertEquals(result.action, 'upload/resumable')
 
 if __name__ == "__main__":
     unittest.main()
