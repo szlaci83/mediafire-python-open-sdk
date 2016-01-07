@@ -17,9 +17,9 @@ elif six.PY2:
     from mock import MagicMock
 
 from mediafire.api import (MediaFireApi, API_BASE, API_VER)
-from mediafire.uploader import (MediaFireUploader, UPLOAD_SIMPLE_LIMIT,
-                                get_resumable_upload_unit_size,
-                                get_hash_info)
+from mediafire.uploader import (MediaFireUploader, UPLOAD_SIMPLE_LIMIT_BYTES,
+                                compute_resumable_upload_unit_size,
+                                compute_hash_info)
 
 
 class MediaFireUploaderTest(unittest.TestCase):
@@ -443,7 +443,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
     def test_upload_resumable_action_on_duplicate(self):
         """Test action_on_duplicate propagation for upload/resumable"""
 
-        content_length = UPLOAD_SIMPLE_LIMIT + 1
+        content_length = UPLOAD_SIMPLE_LIMIT_BYTES + 1
 
         def upload_check_callback(request):
             doc = {
@@ -456,7 +456,7 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
                     "resumable_upload": {
                         "all_units_ready":
                             upload_check_callback.all_units_ready,
-                        # UPLOAD_SIMPLE_LIMIT = 4MiB, min 4 units
+                        # UPLOAD_SIMPLE_LIMIT_BYTES = 4MiB, min 4 units
                         # one more byte gives us 5 units
                         "number_of_units": 5,
                         "unit_size": 1024 * 1024,
@@ -648,7 +648,7 @@ class ResumableUploadLocalUnitSizeTests(unittest.TestCase):
         }
 
         for file_size, expected in file_size_map.items():
-            actual = get_resumable_upload_unit_size(file_size)
+            actual = compute_resumable_upload_unit_size(file_size)
             self.assertEqual(
                 actual,
                 expected,
@@ -658,13 +658,13 @@ class ResumableUploadLocalUnitSizeTests(unittest.TestCase):
 
 
 class MediaFireUploadHashingTests(unittest.TestCase):
-    """Tests for get_hash_info"""
+    """Tests for compute_hash_info"""
 
     def test_missing_unit_size(self):
         """Test that hasher works with no unit_size"""
 
         fd = io.BytesIO(b"hello world")
-        result = get_hash_info(fd)
+        result = compute_hash_info(fd)
 
         self.assertEqual(
             result.file,
@@ -683,10 +683,10 @@ class MediaFireUploadHashingTests(unittest.TestCase):
         data = b'\0' * DATA_SIZE
         fd = io.BytesIO(data)
 
-        unit_size = get_resumable_upload_unit_size(DATA_SIZE)
+        unit_size = compute_resumable_upload_unit_size(DATA_SIZE)
         self.assertEqual(unit_size, MEBIBYTE)
 
-        result = get_hash_info(fd, unit_size)
+        result = compute_hash_info(fd, unit_size)
 
         self.assertEqual(
             result.file,

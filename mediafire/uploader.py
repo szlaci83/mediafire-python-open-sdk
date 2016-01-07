@@ -16,7 +16,7 @@ from mediafire.api import MediaFireConnectionError
 MEBIBYTE = 2 ** 20
 
 # Use resumable upload if file is larger than 4MiB
-UPLOAD_SIMPLE_LIMIT = 4 * MEBIBYTE
+UPLOAD_SIMPLE_LIMIT_BYTES = 4 * MEBIBYTE
 
 # Retry resumable uploads 5 times
 UPLOAD_RETRY_COUNT = 5
@@ -32,7 +32,7 @@ STATUS_NO_MORE_REQUESTS = 99
 STATUS_UPLOAD_IN_PROGRESS = 17
 
 # Read this much during hashing, must be a power of 2 and not more than 2 ** 10
-HASH_CHUNK_SIZE = 8192
+HASH_CHUNK_SIZE_BYTES = 8192
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -104,8 +104,13 @@ class RetriableUploadError(UploadError):
     pass
 
 
-HashInfo = namedtuple('HashInfo', [
-    'file', 'units'
+MediaFireHashInfo = namedtuple('MediaFireHashInfo', [
+    # sha256 digest of the whole file
+    'file',
+    # array of sha256 digests of upload units
+    'units',
+    # size of the file, for verification
+    'size'
 ])
 
 
@@ -131,7 +136,7 @@ def decode_resumable_upload_bitmap(bitmap_node, number_of_units):
     return result
 
 
-def get_resumable_upload_unit_size(size):
+def compute_resumable_upload_unit_size(size):
     """Calculate resumable upload unit size from file size
 
     size -- size of the file in bytes
@@ -156,17 +161,19 @@ def get_resumable_upload_unit_size(size):
     return unit_size
 
 
-def get_hash_info(fd, unit_size=None):
-    """Get HashInfo structure from the fd, unit_size
+def compute_hash_info(fd, unit_size=None):
+    """Get MediaFireHashInfo structure from the fd, unit_size
 
     fd -- file descriptor - expects exclusive access because of seeking
     unit_size -- size of a single unit
 
-    Returns HashInfo:
+    Returns MediaFireHashInfo:
     hi.file -- sha256 of the whole file
     hi.units -- list of sha256 hashes for each unit
     """
 
+    fd.seek(0, os.SEEK_END)
+    file_size = fd.tell()
     fd.seek(0, os.SEEK_SET)
 
     units = []
@@ -175,7 +182,7 @@ def get_hash_info(fd, unit_size=None):
     file_hash = hashlib.sha256()
     unit_hash = hashlib.sha256()
 
-    for chunk in iter(lambda: fd.read(HASH_CHUNK_SIZE), b''):
+    for chunk in iter(lambda: fd.read(HASH_CHUNK_SIZE_BYTES), b''):
         file_hash.update(chunk)
 
         unit_hash.update(chunk)
@@ -193,9 +200,10 @@ def get_hash_info(fd, unit_size=None):
 
     fd.seek(0, os.SEEK_SET)
 
-    return HashInfo(
+    return MediaFireHashInfo(
         file=file_hash.hexdigest().lower(),
-        units=units
+        units=units,
+        size=file_size
     )
 
 
@@ -218,7 +226,7 @@ class MediaFireUploader(object):
         name -- file name
         folder_key -- folderkey of the target folder
         path -- path to file relative to folder_key
-        hash_info -- HashInfo for contents
+        hash_info -- MediaFireHashInfo for file contents
         filedrop_key -- filedrop to use instead of folder_key
         action_on_duplicate -- skip, keep, replace
         """
@@ -228,9 +236,9 @@ class MediaFireUploader(object):
         size = fd.tell()
         fd.seek(0, os.SEEK_SET)
 
-        if size > UPLOAD_SIMPLE_LIMIT:
+        if size > UPLOAD_SIMPLE_LIMIT_BYTES:
             resumable = True
-            unit_size = get_resumable_upload_unit_size(size)
+            unit_size = compute_resumable_upload_unit_size(size)
         else:
             resumable = False
             unit_size = None
@@ -238,7 +246,12 @@ class MediaFireUploader(object):
         # Allow supplying stored HashInfo
         if hash_info is None:
             logger.debug("Calculating checksum")
-            hash_info = get_hash_info(fd, unit_size)
+            hash_info = compute_hash_info(fd, unit_size)
+
+        if hash_info.size != size:
+            # Has the file changed beween computing the hash
+            # and calling upload()?
+            raise ValueError("hash_info.size mismatch")
 
         upload_info = _UploadInfo(fd=fd, name=name, folder_key=folder_key,
                                   hash_info=hash_info, size=size, path=path,
@@ -418,7 +431,7 @@ class MediaFireUploader(object):
     def _upload_simple(self, upload_info, check_result=None):
         """Simple upload and return quickkey
 
-        Can be used for small files smaller than UPLOAD_SIMPLE_LIMIT
+        Can be used for small files smaller than UPLOAD_SIMPLE_LIMIT_BYTES
 
         upload_info -- UploadInfo object
         check_result -- ignored
@@ -522,7 +535,8 @@ class MediaFireUploader(object):
 
         # make sure we have calculated the right thing
         assert(len(upload_info.hash_info.units) == number_of_units)
-        assert(unit_size == get_resumable_upload_unit_size(upload_info.size))
+        assert(unit_size ==
+               compute_resumable_upload_unit_size(upload_info.size))
 
         logger.debug("Preparing %d units * %d bytes",
                      number_of_units, unit_size)
