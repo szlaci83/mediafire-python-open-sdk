@@ -159,6 +159,35 @@ encrypted upload key.
 
 .. _does not support: http://forum.mediafiredev.com/showthread.php?293-FileDrop-upload-instant-w-o-session-succeeds-and-fails-at-the-same-time&p=478&viewfull=1#post478
 
+MediaFireHashInfo
+-----------------
+
+MediaFire API requires file hash information to be provided during upload.
+For resumable uploads, the hash needs to be calculated for every upload unit.
+
+If you are uploading a large object, you may want to calculate and store hash
+information, so that you can re-use it if upload fails.
+
+ 1. Check whether the file size is larger than `mediafire.uploader.UPLOAD_SIMPLE_LIMIT_BYTES`
+
+    * If the file is larger, get the unit_size from `mediafire.uploader.compute_resumable_upload_unit_size()`
+    * If the file is smaller, unit_size is None
+
+ 2. Get `MediaFireHashInfo` from `mediafire.uploader.compute_hash_info(fd, unit_size)`
+ 3. Store the received object for future
+ 4. Provide the received object to `MediaFireUploader.upload()` via `hash_info` parameter.
+
+
+MediaFireHashInfo fields:
+
+ * file - sha256 hexdigest of the whole file
+ * units[] - array of sha256 hexdigest of the separate file units
+ * size - size of the file at the time when hash was computed.
+          in case of mismatch, the file has definitely changed
+          and the hash_info structure is no longer valid
+
+See `examples/hashing-upload.py` for a working example.
+
 ======================================
 mediafire.media.ConversionServerClient
 ======================================
