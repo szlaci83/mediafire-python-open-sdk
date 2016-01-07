@@ -43,13 +43,13 @@ class _UploadInfo(object):
     """Structure containing upload details"""
 
     def __init__(self, fd=None, name=None, folder_key=None, path=None,
-                 hash_=None, size=None, filedrop_key=None,
+                 hash_info=None, size=None, filedrop_key=None,
                  action_on_duplicate=None):
         self.fd = fd
         self.name = name
         self.folder_key = folder_key
         self.path = path
-        self.hash_ = hash_
+        self.hash_info = hash_info
         self.size = size
         self.filedrop_key = filedrop_key
         self.action_on_duplicate = action_on_duplicate
@@ -211,14 +211,14 @@ class MediaFireUploader(object):
 
     # pylint: disable=too-many-arguments
     def upload(self, fd, name=None, folder_key=None, filedrop_key=None,
-               path=None, hash_=None, action_on_duplicate=None):
+               path=None, hash_info=None, action_on_duplicate=None):
         """Upload file, returns UploadResult object
 
         fd -- file-like object to upload from, expects exclusive access
         name -- file name
         folder_key -- folderkey of the target folder
         path -- path to file relative to folder_key
-        hash_ -- HashInfo for contents
+        hash_info -- HashInfo for contents
         filedrop_key -- filedrop to use instead of folder_key
         action_on_duplicate -- skip, keep, replace
         """
@@ -236,12 +236,12 @@ class MediaFireUploader(object):
             unit_size = None
 
         # Allow supplying stored HashInfo
-        if hash_ is None:
+        if hash_info is None:
             logger.debug("Calculating checksum")
-            hash_ = get_hash_info(fd, unit_size)
+            hash_info = get_hash_info(fd, unit_size)
 
         upload_info = _UploadInfo(fd=fd, name=name, folder_key=folder_key,
-                                  hash_=hash_, size=size, path=path,
+                                  hash_info=hash_info, size=size, path=path,
                                   filedrop_key=filedrop_key,
                                   action_on_duplicate=action_on_duplicate)
 
@@ -367,7 +367,7 @@ class MediaFireUploader(object):
         return self._api.upload_check(
             filename=upload_info.name,
             size=upload_info.size,
-            hash_=upload_info.hash_.file,
+            hash_=upload_info.hash_info.file,
             folder_key=upload_info.folder_key,
             filedrop_key=upload_info.filedrop_key,
             path=upload_info.path,
@@ -379,7 +379,7 @@ class MediaFireUploader(object):
         return UploadResult(
             action=None,
             quickkey=check_result['duplicate_quickkey'],
-            hash_=upload_info.hash_.file,
+            hash_=upload_info.hash_info.file,
             filename=upload_info.name,
             size=upload_info.size,
             created=None,
@@ -398,7 +398,7 @@ class MediaFireUploader(object):
         result = self._api.upload_instant(
             upload_info.name,
             upload_info.size,
-            upload_info.hash_.file,
+            upload_info.hash_info.file,
             path=upload_info.path,
             folder_key=upload_info.folder_key,
             filedrop_key=upload_info.filedrop_key,
@@ -410,7 +410,7 @@ class MediaFireUploader(object):
             quickkey=result['quickkey'],
             filename=result['filename'],
             revision=result['new_device_revision'],
-            hash_=upload_info.hash_.file,
+            hash_=upload_info.hash_info.file,
             size=upload_info.size,
             created=None
         )
@@ -431,7 +431,7 @@ class MediaFireUploader(object):
             filedrop_key=upload_info.filedrop_key,
             path=upload_info.path,
             file_size=upload_info.size,
-            file_hash=upload_info.hash_.file,
+            file_hash=upload_info.hash_info.file,
             action_on_duplicate=upload_info.action_on_duplicate)
 
         logger.debug("upload_result: %s", upload_result)
@@ -455,7 +455,7 @@ class MediaFireUploader(object):
         return self._api.upload_resumable(
             uu_info.fd,
             uu_info.upload_info.size,
-            uu_info.upload_info.hash_,
+            uu_info.upload_info.hash_info.file,
             uu_info.hash_,
             uu_info.uid,
             unit_size,
@@ -496,7 +496,7 @@ class MediaFireUploader(object):
 
                 unit_info = _UploadUnitInfo(
                     upload_info=upload_info,
-                    hash_=upload_info.hash_.units[unit_id],
+                    hash_=upload_info.hash_info.units[unit_id],
                     fd=unit_fd,
                     uid=unit_id)
 
@@ -521,8 +521,7 @@ class MediaFireUploader(object):
         number_of_units = int(resumable_upload['number_of_units'])
 
         # make sure we have calculated the right thing
-        logger.error(upload_info.hash_.units)
-        assert(len(upload_info.hash_.units) == number_of_units)
+        assert(len(upload_info.hash_info.units) == number_of_units)
         assert(unit_size == get_resumable_upload_unit_size(upload_info.size))
 
         logger.debug("Preparing %d units * %d bytes",
