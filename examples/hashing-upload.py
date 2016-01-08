@@ -52,22 +52,14 @@ MEDIAFIRE_PASSWORD = os.environ['MEDIAFIRE_PASSWORD']
 
 def hash_info_to_json(hash_info):
     """Convert HashInfo to JSON string"""
-    return json.dumps({
-        "file": hash_info.file,
-        "units": hash_info.units,
-        "size": hash_info.size
-    })
+    return json.dumps(hash_info._asdict())
 
 
 def json_to_hash_info(json_doc):
     """Convert JSON string to HashInfo"""
     hash_info_doc = json.loads(json_doc)
 
-    return MediaFireHashInfo(
-        file=hash_info_doc["file"],
-        units=hash_info_doc["units"],
-        size=hash_info_doc["size"]
-    )
+    return MediaFireHashInfo(**hash_info_doc)
 
 
 def compute_hash_and_return_json(path):
