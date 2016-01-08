@@ -59,11 +59,18 @@ class Folder(Resource):
 class MediaFireClient(object):
     """Less-user-hostile MediaFire Client"""
 
-    def __init__(self, session_token=None):
-        """Initialize MediaFireClient"""
+    def __init__(self, session_token=None, _api=None):
+        """Initialize MediaFireClient
 
-        # pass-through to HTTP client
-        self.api = MediaFireApi()
+        session_token -- previously acquired session_token dict
+        """
+
+        # support testing
+        if _api is None:
+            # pass-through to HTTP client
+            self.api = MediaFireApi()
+        else:
+            self.api = _api()
 
         if session_token:
             self.api.session = session_token
@@ -150,53 +157,35 @@ class MediaFireClient(object):
 
         # remove empty path components
         path = posixpath.normpath(path)
-        tokens = [t for t in path.split(posixpath.sep) if t != '']
+        components = [t for t in path.split(posixpath.sep) if t != '']
 
-        if not len(tokens):
+        if not components:
             # request for root
             return Folder(
                 self.api.folder_get_info(folder_key)['folder_info']
             )
 
-        search_token = tokens.pop(0)
-
         resource = None
-        node = None
-        while resource is None:
-            if node is not None:
-                folder_key = node['folderkey']
+        folder_key = None
 
-            folders_result = self.api.folder_get_content(folder_key=folder_key)
-            folders = folders_result['folder_content']['folders']
-            name_map = {i['name']: i for i in folders}
+        for component in components:
+            for item in self._folder_get_content_iter(folder_key):
+                name = item['name'] if 'name' in item else item['filename']
 
-            if search_token in name_map:
-                if not tokens:
-                    # last component resolved
-                    resource = name_map[search_token]
+                if name == component:
+                    if components[-1] != component:
+                        # still have components to go through
+                        if 'filename' in item:
+                            # found a file, expected a directory
+                            raise NotAFolderError(item['filename'])
+                        folder_key = item['folderkey']
+                    else:
+                        # found the leaf
+                        resource = item
                     break
-                else:
-                    # continue searching
-                    node = name_map[search_token]
-                    search_token = tokens.pop(0)
-                    continue
 
-            if tokens:
-                # intermediate folder not found, nothing to see here
-                break
-
-            # no more tokens, we are at the last component
-            files_result = self.api.folder_get_content(folder_key=folder_key,
-                                                       content_type='files')
-            files = files_result['folder_content']['files']
-            name_map = {i['filename']: i for i in files}
-
-            if search_token in name_map:
-                resource = name_map[search_token]
-                break
-
-            if not tokens:
-                break
+                if resource is not None:
+                    break
 
         if resource is None:
             raise ResourceNotFoundError(path)
@@ -212,6 +201,34 @@ class MediaFireClient(object):
 
         return result
 
+    def _folder_get_content_iter(self, folder_key=None):
+        """Iterator for around api.folder_get_content"""
+
+        lookup_params = [
+            {'content_type': 'folders', 'node': 'folders'},
+            {'content_type': 'files', 'node': 'files'}
+        ]
+
+        for param in lookup_params:
+            more_chunks = True
+            chunk = 0
+            while more_chunks:
+                chunk += 1
+                content = self.api.folder_get_content(
+                    content_type=param['content_type'], chunk=chunk,
+                    folder_key=folder_key)['folder_content']
+
+                # empty folder/file list
+                if not content[param['node']]:
+                    break
+
+                # no next page
+                if content['more_chunks'] == 'no':
+                    more_chunks = False
+
+                for resource_info in content[param['node']]:
+                    yield resource_info
+
     def get_folder_contents_iter(self, uri):
         """Get directory listing iterator
 
@@ -225,23 +242,11 @@ class MediaFireClient(object):
 
         folder_key = resource['folderkey']
 
-        lookup_params = [
-            {'content_type': 'folders', 'node': 'folders', 'type': Folder},
-            {'content_type': 'files', 'node': 'files', 'type': File}
-        ]
-
-        for param in lookup_params:
-            chunk = 0
-            while True:
-                chunk += 1
-                content = self.api.folder_get_content(
-                    content_type=param['content_type'], chunk=chunk,
-                    folder_key=folder_key)['folder_content']
-                if not content[param['node']]:
-                    break
-
-                for resource_info in content[param['node']]:
-                    yield param['type'](resource_info)
+        for item in self._folder_get_contents_iter(folder_key):
+            if 'filename' in item:
+                yield File(item)
+            elif 'name' in item:
+                yield Folder(item)
 
     def create_folder(self, uri, recursive=False):
         """Create folder
