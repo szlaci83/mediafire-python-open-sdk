@@ -90,9 +90,14 @@ class MediaFireClient(object):
         uri -- One of:
             mf:(quickkey|folderkey[/path/to/resource]|/path/to/resource)
             /path/to/resource
+            mf:///path/to/resource
         """
 
         tokens = urlparse(uri)
+
+        if tokens.netloc != '':
+            raise ValueError("MediaFire URI format error ({})".format(uri))
+
         if tokens.path.startswith("/"):
             # Use path lookup only, root=myfiles
             result = self.get_resource_by_path(tokens.path)
