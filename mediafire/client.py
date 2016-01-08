@@ -101,7 +101,7 @@ class MediaFireClient(object):
                 resource_key = tokens.path.split('/')[0]
                 # get root first
                 parent_folder = self.get_resource_by_key(resource_key)
-                if type(parent_folder) is not Folder:
+                if not isinstance(parent_folder, Folder):
                     raise NotAFolderError(resource_key)
                 path = '/'.join(tokens.path.split('/')[1:])
                 # perform additional lookup by path
@@ -202,7 +202,7 @@ class MediaFireClient(object):
         return result
 
     def _folder_get_content_iter(self, folder_key=None):
-        """Iterator for around api.folder_get_content"""
+        """Iterator for api.folder_get_content"""
 
         lookup_params = [
             {'content_type': 'folders', 'node': 'folders'},
@@ -237,7 +237,7 @@ class MediaFireClient(object):
 
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is not Folder:
+        if not isinstance(resource, Folder):
             raise NotAFolderError(uri)
 
         folder_key = resource['folderkey']
@@ -261,7 +261,7 @@ class MediaFireClient(object):
 
         try:
             parent_node = self.get_resource_by_uri(parent_uri)
-            if type(parent_node) is not Folder:
+            if not isinstance(parent_node, Folder):
                 raise NotAFolderError(parent_uri)
             parent_key = parent_node['folderkey']
         except ResourceNotFoundError:
@@ -288,7 +288,7 @@ class MediaFireClient(object):
 
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is not Folder:
+        if not isinstance(resource, Folder):
             raise ValueError("Folder expected, got {}".format(type(resource)))
 
         if purge:
@@ -317,7 +317,7 @@ class MediaFireClient(object):
         """
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is not File:
+        if not isinstance(resource, File):
             raise ValueError("File expected, got {}".format(type(resource)))
 
         if purge:
@@ -334,9 +334,9 @@ class MediaFireClient(object):
         """
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is File:
+        if isinstance(resource, File):
             result = self.delete_file(uri, purge)
-        elif type(resource) is Folder:
+        elif isinstance(resource, Folder):
             result = self.delete_folder(uri, purge)
         else:
             raise ValueError('Unsupported resource: {}'.format(type(resource)))
@@ -361,17 +361,17 @@ class MediaFireClient(object):
         name = None
 
         if dest_resource:
-            if type(dest_resource) is File:
+            if isinstance(dest_resource, File):
                 folder_key = dest_resource['parent_folderkey']
                 name = dest_resource['filename']
-            elif type(dest_resource) is Folder:
+            elif isinstance(dest_resource, Folder):
                 if is_fh:
                     raise ValueError("Cannot determine target file name")
                 basename = posixpath.basename(source)
                 dest_uri = posixpath.join(dest_uri, basename)
                 try:
                     result = self.get_resource_by_uri(dest_uri)
-                    if type(result) is Folder:
+                    if isinstance(result, Folder):
                         raise ValueError("Target is a folder (file expected)")
                     folder_key = result['parent_folderkey']
                     name = result['filename']
@@ -385,7 +385,7 @@ class MediaFireClient(object):
             # get parent resource
             parent_uri = '/'.join(dest_uri.split('/')[0:-1])
             result = self.get_resource_by_uri(parent_uri)
-            if type(result) is not Folder:
+            if not isinstance(result, Folder):
                 raise NotAFolderError("Parent component is not a folder")
 
             folder_key = result['folderkey']
@@ -426,7 +426,7 @@ class MediaFireClient(object):
         target -- download location
         """
         resource = self.get_resource_by_uri(src_uri)
-        if type(resource) is not File:
+        if not isinstance(resource, File):
             raise MediaFireError("Only files can be downloaded")
 
         quick_key = resource['quickkey']
@@ -473,6 +473,7 @@ class MediaFireClient(object):
             if not target_is_filehandle:
                 out_fd.close()
 
+    # pylint: disable=too-many-arguments
     def update_file_metadata(self, uri, filename=None, description=None,
                              mtime=None, privacy=None):
         """Update resource metadata
@@ -486,7 +487,7 @@ class MediaFireClient(object):
 
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is not File:
+        if not isinstance(resource, File):
             raise ValueError('Expected File, got {}'.format(type(resource)))
 
         result = self.api.file_update(resource['quickkey'], filename=filename,
@@ -494,7 +495,9 @@ class MediaFireClient(object):
                                       mtime=mtime, privacy=privacy)
 
         return result
+    # pylint: enable=too-many-arguments
 
+    # pylint: disable=too-many-arguments
     def update_folder_metadata(self, uri, foldername=None, description=None,
                                mtime=None, privacy=None,
                                privacy_recursive=None):
@@ -510,7 +513,7 @@ class MediaFireClient(object):
 
         resource = self.get_resource_by_uri(uri)
 
-        if type(resource) is not Folder:
+        if not isinstance(resource, Folder):
             raise ValueError('Expected Folder, got {}'.format(type(resource)))
 
         result = self.api.folder_update(resource['folderkey'],
@@ -521,3 +524,4 @@ class MediaFireClient(object):
                                         privacy_recursive=privacy_recursive)
 
         return result
+    # pylint: enable=too-many-arguments

@@ -387,6 +387,8 @@ class MediaFireUploader(object):
             resumable=resumable
         )
 
+    # pylint: disable=no-self-use
+    # We just provide a consistent interface
     def _upload_none(self, upload_info, check_result):
         """Dummy upload function for when we don't actually upload"""
         return UploadResult(
@@ -398,8 +400,9 @@ class MediaFireUploader(object):
             created=None,
             revision=None
         )
+    # pylint: enable=no-self-use
 
-    def _upload_instant(self, upload_info, check_result=None):
+    def _upload_instant(self, upload_info, _=None):
         """Instant upload and return quickkey
 
         Can be used when the file is already stored somewhere in MediaFire
@@ -428,7 +431,7 @@ class MediaFireUploader(object):
             created=None
         )
 
-    def _upload_simple(self, upload_info, check_result=None):
+    def _upload_simple(self, upload_info, _=None):
         """Simple upload and return quickkey
 
         Can be used for small files smaller than UPLOAD_SIMPLE_LIMIT_BYTES
@@ -534,7 +537,7 @@ class MediaFireUploader(object):
         number_of_units = int(resumable_upload['number_of_units'])
 
         # make sure we have calculated the right thing
-        assert(len(upload_info.hash_info.units) == number_of_units)
+        assert len(upload_info.hash_info.units) == number_of_units
         assert(unit_size ==
                compute_resumable_upload_unit_size(upload_info.size))
 

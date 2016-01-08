@@ -21,7 +21,7 @@ API_VER = '1.3'
 # Retries on connection errors/timeouts
 API_ERROR_MAX_RETRIES = 5
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+logger = logging.getLogger(__name__)
 
 # Each API call may have lots of parameters, so disable warning
 # pylint: disable=too-many-arguments
@@ -145,7 +145,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
 
         uri = self._build_uri(action)
 
-        if type(params) is six.text_type:
+        if isinstance(params, six.text_type):
             query = params
         else:
             query = self._build_query(uri, params, action_token_type)
@@ -180,10 +180,10 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         try:
             response = self.http.post(API_BASE + uri, data=data,
                                       headers=headers, stream=True)
-        except RequestException as e:
+        except RequestException as ex:
             logger.exception("HTTP request failed")
             raise MediaFireConnectionError(
-                "RequestException: {}".format(e))
+                "RequestException: {}".format(ex))
 
         return self._process_response(response)
 
@@ -257,7 +257,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             self._session = None
             return
 
-        if type(value) is not dict:
+        if not isinstance(value, dict):
             raise ValueError("session info is required")
 
         session_parsed = {}
@@ -278,11 +278,6 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def session(self):
         """Unset session"""
         self._session = None
-
-    # TODO: Remove in 0.5
-    def set_session_token(self, session_token=None):
-        """DEPRECTATED, use api.session = session_token"""
-        self.session = session_token
 
     def set_action_token(self, type_=None, action_token=None):
         """Set action tokens
@@ -597,6 +592,8 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         return self.request(action, params, action_token_type="upload",
                             upload_info=upload_info, headers=headers)
 
+    # pylint: disable=too-many-locals
+    # The API requires us to provide all of that
     def upload_resumable(self, fd, filesize, filehash, unit_hash, unit_id,
                          unit_size, quick_key=None, action_on_duplicate=None,
                          mtime=None, version_control=None, folder_key=None,
@@ -633,6 +630,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
 
         return self.request(action, params, action_token_type="upload",
                             upload_info=upload_info, headers=headers)
+    # pylint: enable=too-many-locals
 
     def upload_instant(self, filename, size, hash_, quick_key=None,
                        folder_key=None, filedrop_key=None, path=None,

@@ -35,7 +35,7 @@ def do_ls(client, args):
         else:
             item['pf'] = '-'
 
-        if type(item) is Folder:
+        if isinstance(item, Folder):
             # type flag
             item['tf'] = 'd'
             item['key'] = item['folderkey']
@@ -61,7 +61,7 @@ def do_file_upload(client, args):
         except ResourceNotFoundError:
             resource = None
 
-        if (resource and type(resource) is not Folder
+        if (resource and not isinstance(resource, Folder)
                 or not args.dest_uri.endswith('/')):
             print("file-upload: "
                   "target '{}' is not a directory".format(args.dest_uri))
@@ -144,7 +144,7 @@ def do_debug_get_resource(client, args):
     return True
 
 
-def main():
+def main():  # pylint: disable=too-many-statements
     """Main entry point"""
     parser = argparse.ArgumentParser(prog='mediafire-cli',
                                      description=__doc__)
