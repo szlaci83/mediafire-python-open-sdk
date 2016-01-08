@@ -21,11 +21,6 @@ FOLDER_KEY_LENGTH = 13
 logger = logging.getLogger(__name__)
 
 
-class ApiBugWarning(Warning):
-    """Warns when remote API bug is encountered"""
-    pass
-
-
 class MediaFireError(Exception):
     """Base class for MediaFire errors"""
     pass
@@ -39,6 +34,10 @@ class ResourceNotFoundError(MediaFireError):
 class NotAFolderError(MediaFireError):
     """Raised when operation expects a folder but got something else"""
     pass
+
+
+class DownloadError(MediaFireError):
+    """Raised when download fails"""
 
 
 class Resource(dict):
@@ -171,7 +170,6 @@ class MediaFireClient(object):
             )
 
         resource = None
-        folder_key = None
 
         for component in components:
             for item in self._folder_get_content_iter(folder_key):
@@ -258,6 +256,17 @@ class MediaFireClient(object):
 
         uri -- mediafire URI
         """
+
+        # check that folder exists already
+        try:
+            resource = self.get_resource_by_uri(uri)
+
+            if isinstance(resource, Folder):
+                return resource
+            else:
+                raise NotAFolderError(uri)
+        except ResourceNotFoundError:
+            pass
 
         uri = uri.rstrip('/')
 
@@ -408,6 +417,7 @@ class MediaFireClient(object):
         folder_key, name = self._prepare_upload_info(source, dest_uri)
 
         is_fh = hasattr(source, 'read')
+        fd = None
 
         try:
             if is_fh:
@@ -417,8 +427,9 @@ class MediaFireClient(object):
                 # Handling fs open/close
                 fd = open(source, 'rb')
 
-            return MediaFireUploader(self.api).upload(fd, name,
-                                                      folder_key=folder_key)
+            return MediaFireUploader(self.api).upload(
+                fd, name, folder_key=folder_key,
+                action_on_duplicate='replace')
         finally:
             # Close filehandle if we opened it
             if fd and not is_fh:
@@ -438,6 +449,9 @@ class MediaFireClient(object):
         result = self.api.file_get_links(quick_key=quick_key,
                                          link_type='direct_download')
         direct_download = result['links'][0]['direct_download']
+
+        # Force download over HTTPS
+        direct_download = direct_download.replace('http:', 'https:')
 
         logger.info(direct_download)
 
@@ -470,7 +484,7 @@ class MediaFireClient(object):
 
             checksum_hex = checksum.hexdigest().lower()
             if checksum_hex != resource['hash']:
-                raise RuntimeError("Hash mismatch ({} != {})".format(
+                raise DownloadError("Hash mismatch ({} != {})".format(
                     resource['hash'], checksum_hex))
 
             logger.info("Download completed successfully")
