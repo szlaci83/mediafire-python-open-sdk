@@ -151,8 +151,10 @@ def main():
 
     parser.add_argument('--debug', dest='debug', action='store_true',
                         default=False, help='Enable debug output')
-    parser.add_argument('--email', dest='email', required=False)
-    parser.add_argument('--password', dest='password', required=False)
+    parser.add_argument('--email', dest='email', required=False,
+                        default=os.environ.get('MEDIAFIRE_EMAIL', None))
+    parser.add_argument('--password', dest='password', required=False,
+                        default=os.environ.get('MEDIAFIRE_PASSWORD', None))
 
     actions = parser.add_subparsers(title='Actions', dest='action')
     # http://bugs.python.org/issue9253#msg186387
