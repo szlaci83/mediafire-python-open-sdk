@@ -23,7 +23,7 @@ class TestUploadPath(unittest.TestCase):
                 return File({
                     'parent_folderkey': folder_key,
                     'quickkey': quick_key,
-                    'name': 'f.txt'
+                    'filename': 'f.txt'
                 })
 
         client = MediaFireClient()
@@ -131,7 +131,7 @@ class TestUploadPath(unittest.TestCase):
             elif uri == 'mf:/e':
                 return File({
                     'quickkey': 'f' * 15,
-                    'name': 'e'
+                    'filename': 'e'
                 })
 
         client = MediaFireClient()
@@ -150,7 +150,7 @@ class TestUploadPath(unittest.TestCase):
             if uri == dest_uri:
                 return File({
                     'quickkey': quick_key,
-                    'name': 'm.txt',
+                    'filename': 'm.txt',
                     'parent_folderkey': folder_key
                 })
 

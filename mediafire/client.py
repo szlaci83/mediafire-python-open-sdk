@@ -242,7 +242,7 @@ class MediaFireClient(object):
 
         folder_key = resource['folderkey']
 
-        for item in self._folder_get_contents_iter(folder_key):
+        for item in self._folder_get_content_iter(folder_key):
             if 'filename' in item:
                 yield File(item)
             elif 'name' in item:
@@ -273,7 +273,7 @@ class MediaFireClient(object):
 
         # We specify exact location, so don't allow duplicates
         result = self.api.folder_create(
-            folder_name, parent_key=parent_key, allow_duplicate_name='no')
+            folder_name, parent_key=parent_key, action_on_duplicate='skip')
 
         logger.info("Created folder '%s' [mf:%s]",
                     result['name'], result['folder_key'])
@@ -363,7 +363,7 @@ class MediaFireClient(object):
         if dest_resource:
             if type(dest_resource) is File:
                 folder_key = dest_resource['parent_folderkey']
-                name = dest_resource['name']
+                name = dest_resource['filename']
             elif type(dest_resource) is Folder:
                 if is_fh:
                     raise ValueError("Cannot determine target file name")
