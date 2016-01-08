@@ -1,3 +1,9 @@
+TBD Release 0.5.0
+ * ! MediaFireUploader API breaking change: hash_ -> hash_info
+ * Calculate unit_size and hash file/units in one go - #3
+ * Fix resource lookup for large folders - #17
+ * Use explicit more_chunks flag from server - #9
+
 2015-05-22 Release 0.4.1
  * Trap and retry upload exceptions - #16
 
