@@ -61,12 +61,9 @@ def do_file_upload(client, args):
         except ResourceNotFoundError:
             resource = None
 
-        if (resource and not isinstance(resource, Folder)
-                or not args.dest_uri.endswith('/')):
+        if resource and not isinstance(resource, Folder):
             print("file-upload: "
                   "target '{}' is not a directory".format(args.dest_uri))
-            if not resource:
-                print("\tHint: add trailing / to create one")
             return None
 
     with client.upload_session():
