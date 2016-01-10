@@ -13,10 +13,10 @@ Usage:
     export MEDIAFIRE_EMAIL=email@example.com
     export MEDIAFIRE_PASSWORD=mediafire-password
     # get hash information
-    HASH_INFO=$(hashing-upload.py /path/to/file)
+    hashing-upload.py /path/to/file > /path/to/hash_info
 
     # upload with stored hash
-    hashing-upload.py /path/to/file "$HASH_INFO"
+    hashing-upload.py /path/to/file /path/to/hash_info
 
 
 MediaFireHashInfo fields:
@@ -36,7 +36,7 @@ import os
 import sys
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 from mediafire import (MediaFireApi, MediaFireUploader)
 
@@ -79,9 +79,12 @@ def compute_hash_and_return_json(path):
     return hash_info_to_json(hash_info)
 
 
-def upload_with_hash_info_json(path, hash_info_json):
+def upload_with_hash_info_json(path, hash_info_json_file):
+    """Upload file using stored hash information"""
 
-    hash_info = json_to_hash_info(hash_info_json)
+    with open(hash_info_json_file, 'rb') as fh:
+        hash_info_json = fh.read()
+        hash_info = json_to_hash_info(hash_info_json)
 
     api = MediaFireApi()
 
@@ -103,11 +106,11 @@ def upload_with_hash_info_json(path, hash_info_json):
     return result
 
 
-def main(path, hash_info_json):
-    if hash_info_json is None:
+def main(path, hash_info_file):
+    if hash_info_file is None:
         print(compute_hash_and_return_json(path))
     else:
-        print(upload_with_hash_info_json(path, hash_info_json))
+        print(upload_with_hash_info_json(path, hash_info_file))
 
 
 if __name__ == "__main__":
