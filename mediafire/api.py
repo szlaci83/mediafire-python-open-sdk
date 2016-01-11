@@ -197,11 +197,8 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             # API BUG: text/xml content-type with json payload
             # http://forum.mediafiredev.com/showthread.php?136
             if content_type == 'text/xml':
-                # we never request xml
-                if response.text.lstrip().startswith('{'):
-                    logger.debug("API BUG: text/xml content-type "
-                                 "with JSON payload")
-                else:
+                # we never request xml, so check it quacks like JSON
+                if not response.text.lstrip().startswith('{'):
                     forward_raw = True
             else:
                 # _process_response can't deal with non-json,
