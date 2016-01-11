@@ -7,7 +7,7 @@ install_requires = [str(r.req) for r in requirements]
 
 setup(
     name='mediafire',
-    version='0.5.0',
+    version='0.5.1',
     author='Roman Yepishev',
     author_email='roman.yepishev@gmail.com',
     packages=['mediafire', 'mediafire.media'],
