@@ -391,7 +391,7 @@ class MediaFireClient(object):
                     result = self.get_resource_by_uri(dest_uri)
                     if isinstance(result, Folder):
                         raise ValueError("Target is a folder (file expected)")
-                    folder_key = result['parent_folderkey']
+                    folder_key = result.get('parent_folderkey', None)
                     name = result['filename']
                 except ResourceNotFoundError:
                     # ok, neither a file nor folder, proceed
@@ -456,8 +456,6 @@ class MediaFireClient(object):
 
         # Force download over HTTPS
         direct_download = direct_download.replace('http:', 'https:')
-
-        logger.info(direct_download)
 
         name = resource['filename']
 
