@@ -93,26 +93,26 @@ class MediaFireClient(object):
         """
 
         tokens = urlparse(uri)
+        path = posixpath.normpath(tokens.path)
 
         if tokens.netloc != '':
             raise ValueError("MediaFire URI format error ({})".format(uri))
 
-        if tokens.path.startswith("/"):
+        if path.startswith("/"):
             # Use path lookup only, root=myfiles
-            result = self.get_resource_by_path(tokens.path)
+            result = self.get_resource_by_path(path)
         elif tokens.scheme == 'mf':
-            if '/' in tokens.path:
-                resource_key = tokens.path.split('/')[0]
+            if '/' in path:
+                resource_key, path = path.split('/', 2)
                 # get root first
                 parent_folder = self.get_resource_by_key(resource_key)
                 if not isinstance(parent_folder, Folder):
                     raise NotAFolderError(resource_key)
-                path = '/'.join(tokens.path.split('/')[1:])
                 # perform additional lookup by path
                 result = self.get_resource_by_path(
                     path, folder_key=parent_folder['folderkey'])
             else:
-                result = self.get_resource_by_key(tokens.path)
+                result = self.get_resource_by_key(path)
         else:
             raise ValueError("MediaFire URI must start with 'mf:' or '/'")
 

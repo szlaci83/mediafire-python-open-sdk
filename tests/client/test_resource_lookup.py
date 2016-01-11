@@ -85,6 +85,12 @@ class DummyMediaFireApi(object):
                     "folderkey": "blah"
                 }
             },
+            "a" * 13: {
+                "folder_info": {
+                    "folderkey": "a" * 13,
+                    "name": "a"
+                }
+            },
             "b" * 13: {
                 "folder_info": {
                     "folderkey": "b" * 13,
@@ -111,28 +117,38 @@ class DummyMediaFireApi(object):
 
 
 class MediaFireResourceLookupTests(unittest.TestCase):
-    """Tests for get_resource_by_*"""
+    """Tests for get_resource_by_uri"""
 
     def setUp(self):
         # we can operate w/o login
         self.client = MediaFireClient(_api=DummyMediaFireApi)
 
-    def test_get_resource_by_path_root(self):
-        """Test that get_resource_by_path works on root"""
-        result = self.client.get_resource_by_path('/')
+    def test_resource_by_uri_root(self):
+        """Test that get_resource_by_uri works on root"""
+        result = self.client.get_resource_by_uri('mf:/')
         self.assertEqual(result["folderkey"], "blah")
 
-    def test_get_folder_by_path(self):
+    def test_folder_by_uri(self):
         """Test that multilevel folder is resolved"""
-        result = self.client.get_resource_by_path('/a/b')
+        result = self.client.get_resource_by_uri('mf:///a/b')
         self.assertEqual(result["folderkey"], "b" * 13)
 
     def test_intermediate_file_raises_error(self):
         """Test that a file in the middle throws NotAFolderError"""
         with self.assertRaises(NotAFolderError):
-            self.client.get_resource_by_path('/hi.txt/b')
+            self.client.get_resource_by_uri('mf:///hi.txt/b')
 
-    def test_get_file_by_path(self):
+    def test_file_by_uri(self):
         """Test that multilevel file is resolved"""
-        result = self.client.get_resource_by_path('/a/b/hi.txt')
+        result = self.client.get_resource_by_uri('mf:///a/b/hi.txt')
         self.assertEqual(result["quickkey"], "i" * 15)
+
+    def test_uri_key(self):
+        """Test that key resolution works"""
+        result = self.client.get_resource_by_uri('mf:' + 'a' * 13)
+        self.assertEqual(result["folderkey"], "a" * 13)
+
+    def test_trailing_slash(self):
+        """Test that URI with trailing slash works"""
+        result = self.client.get_resource_by_uri('mf:' + 'a' * 13 + '/')
+        self.assertEqual(result["folderkey"], "a" * 13)
