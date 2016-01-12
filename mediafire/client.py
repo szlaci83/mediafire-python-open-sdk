@@ -168,10 +168,12 @@ class MediaFireClient(object):
         resource = None
 
         for component in components:
+            exists = False
             for item in self._folder_get_content_iter(folder_key):
                 name = item['name'] if 'name' in item else item['filename']
 
                 if name == component:
+                    exists = True
                     if components[-1] != component:
                         # still have components to go through
                         if 'filename' in item:
@@ -185,6 +187,10 @@ class MediaFireClient(object):
 
                 if resource is not None:
                     break
+
+            if not exists:
+                # intermediate component does not exist - bailing out
+                break
 
         if resource is None:
             raise ResourceNotFoundError(path)

@@ -105,15 +105,16 @@ def do_file_show(client, args):
 
 def do_folder_create(client, args):
     """Create directory"""
-    result = client.create_folder(args.uri, recursive=True)
-    print("Result = {}".format(result))
-
+    for folder_uri in args.uris:
+        client.create_folder(folder_uri, recursive=True)
     return True
 
 
 def do_resource_delete(client, args):
     """Remove resource"""
-    client.delete_resource(args.uri, purge=args.purge)
+    for resource_uri in args.uris:
+        client.delete_resource(resource_uri, purge=args.purge)
+        print("Deleted {}".format(resource_uri))
     return True
 
 
@@ -162,7 +163,7 @@ def main():  # pylint: disable=too-many-statements
                                    help=do_ls.__doc__)
     subparser.add_argument('uri', nargs='?',
                            help='MediaFire URI',
-                           default='mediafire:/')
+                           default='mf:///')
 
     # file-upload
     subparser = actions.add_parser('file-upload',
@@ -187,12 +188,14 @@ def main():  # pylint: disable=too-many-statements
     # folder-create
     subparser = actions.add_parser('folder-create',
                                    help=do_folder_create.__doc__)
-    subparser.add_argument('uri', help='MediaFire folder path URI')
+    subparser.add_argument('uris', nargs='+',
+                           help='MediaFire folder path URI[s]')
 
     # resource-delete
     subparser = actions.add_parser('resource-delete',
                                    help=do_resource_delete.__doc__)
-    subparser.add_argument('uri', help='MediaFire resource URI')
+    subparser.add_argument('uris', nargs='+',
+                           help='MediaFire resource URI[s]')
     subparser.add_argument('--purge', help="Purge, don't send to trash",
                            dest="purge", action="store_true", default=False)
 
