@@ -17,6 +17,8 @@ from mediafire.uploader import (MediaFireUploader, UploadSession)
 QUICK_KEY_LENGTH = 15
 FOLDER_KEY_LENGTH = 13
 
+# All URIs must use this scheme
+URI_SCHEME = 'mf'
 
 logger = logging.getLogger(__name__)
 
@@ -92,29 +94,23 @@ class MediaFireClient(object):
             mf:///path/to/resource
         """
 
-        tokens = urlparse(uri)
-        path = posixpath.normpath(tokens.path)
+        location = self._parse_uri(uri)
 
-        if tokens.netloc != '':
-            raise ValueError("MediaFire URI format error ({})".format(uri))
-
-        if path.startswith("/"):
+        if location.startswith("/"):
             # Use path lookup only, root=myfiles
-            result = self.get_resource_by_path(path)
-        elif tokens.scheme == 'mf':
-            if '/' in path:
-                resource_key, path = path.split('/', 2)
-                # get root first
-                parent_folder = self.get_resource_by_key(resource_key)
-                if not isinstance(parent_folder, Folder):
-                    raise NotAFolderError(resource_key)
-                # perform additional lookup by path
-                result = self.get_resource_by_path(
-                    path, folder_key=parent_folder['folderkey'])
-            else:
-                result = self.get_resource_by_key(path)
+            result = self.get_resource_by_path(location)
+        elif "/" in location:
+            # mf:abcdefjhijklm/name
+            resource_key, path = location.split('/', 2)
+            parent_folder = self.get_resource_by_key(resource_key)
+            if not isinstance(parent_folder, Folder):
+                raise NotAFolderError(resource_key)
+            # perform additional lookup by path
+            result = self.get_resource_by_path(
+                path, folder_key=parent_folder['folderkey'])
         else:
-            raise ValueError("MediaFire URI must start with 'mf:' or '/'")
+            # mf:abcdefjhijklm
+            result = self.get_resource_by_key(location)
 
         return result
 
@@ -237,7 +233,6 @@ class MediaFireClient(object):
 
         uri -- mediafire URI
         """
-
         resource = self.get_resource_by_uri(uri)
 
         if not isinstance(resource, Folder):
@@ -260,6 +255,7 @@ class MediaFireClient(object):
 
         uri -- mediafire URI
         """
+        logger.info("Creating %s", uri)
 
         # check that folder exists already
         try:
@@ -272,10 +268,10 @@ class MediaFireClient(object):
         except ResourceNotFoundError:
             pass
 
-        uri = uri.rstrip('/')
+        location = self._parse_uri(uri)
 
-        folder_name = posixpath.basename(uri)
-        parent_uri = posixpath.dirname(uri)
+        folder_name = posixpath.basename(location)
+        parent_uri = 'mf://' + posixpath.dirname(location)
 
         try:
             parent_node = self.get_resource_by_uri(parent_uri)
@@ -285,7 +281,7 @@ class MediaFireClient(object):
         except ResourceNotFoundError:
             if recursive:
                 result = self.create_folder(parent_uri, recursive=True)
-                parent_key = result['folder_key']
+                parent_key = result['folderkey']
             else:
                 raise
 
@@ -304,7 +300,11 @@ class MediaFireClient(object):
         uri -- MediaFire folder URI
         """
 
-        resource = self.get_resource_by_uri(uri)
+        try:
+            resource = self.get_resource_by_uri(uri)
+        except ResourceNotFoundError:
+            # Nothing to remove
+            return None
 
         if not isinstance(resource, Folder):
             raise ValueError("Folder expected, got {}".format(type(resource)))
@@ -333,7 +333,11 @@ class MediaFireClient(object):
 
         uri -- MediaFire file URI
         """
-        resource = self.get_resource_by_uri(uri)
+        try:
+            resource = self.get_resource_by_uri(uri)
+        except ResourceNotFoundError:
+            # Nothing to remove
+            return None
 
         if not isinstance(resource, File):
             raise ValueError("File expected, got {}".format(type(resource)))
@@ -350,7 +354,11 @@ class MediaFireClient(object):
 
         uri -- mediafire URI
         """
-        resource = self.get_resource_by_uri(uri)
+        try:
+            resource = self.get_resource_by_uri(uri)
+        except ResourceNotFoundError:
+            # Nothing to remove
+            return None
 
         if isinstance(resource, File):
             result = self.delete_file(uri, purge)
@@ -546,3 +554,20 @@ class MediaFireClient(object):
 
         return result
     # pylint: enable=too-many-arguments
+
+    @staticmethod
+    def _parse_uri(uri):
+        """Parse and validate MediaFire URI"""
+
+        tokens = urlparse(uri)
+
+        if tokens.netloc != '':
+            logger.error("Invalid URI: %s", uri)
+            raise ValueError("MediaFire URI format error: "
+                             "host should be empty - mf:///path")
+
+        if tokens.scheme != '' and tokens.scheme != URI_SCHEME:
+            raise ValueError("MediaFire URI format error: "
+                             "must start with 'mf:' or '/'")
+
+        return posixpath.normpath(tokens.path)
