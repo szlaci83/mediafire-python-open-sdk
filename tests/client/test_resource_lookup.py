@@ -143,6 +143,11 @@ class MediaFireResourceLookupTests(unittest.TestCase):
         result = self.client.get_resource_by_uri('mf:///a/b/hi.txt')
         self.assertEqual(result["quickkey"], "i" * 15)
 
+    def test_missing_folder_raises_error(self):
+        """Test that folder is reported missing if it is"""
+        with self.assertRaises(ResourceNotFoundError):
+            self.client.get_resource_by_uri('mf:///a/b/c/hi.txt')
+
     def test_uri_key(self):
         """Test that key resolution works"""
         result = self.client.get_resource_by_uri('mf:' + 'a' * 13)
