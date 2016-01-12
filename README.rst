@@ -249,7 +249,7 @@ MediaFire resources can be referenced by path or by quickkey/folderkey.
         if type(item) is File:
             print("File: {}".format(item['filename']))
         elif type(item) is Folder:
-            print("Folder: {}".format(item['foldername']))
+            print("Folder: {}".format(item['name']))
 
 See ``examples/mediafire-cli.py`` for high-level client usage.
 
