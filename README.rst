@@ -10,15 +10,24 @@ This is a Python implementation of `MediaFire Core API`_ client.
 .. image:: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk.svg?branch=master
     :target: https://travis-ci.org/roman-yepishev/mediafire-python-open-sdk
 
+==========
+Installing
+==========
+
+.. code-block:: bash
+
+    $ pip install mediafire
+
 ==================
 What should I use?
 ==================
 
-You may want to stick to ``MediaFireApi`` and ``MediaFireUploader`` as these are
-covered by tests.
+If you are in a hurry, use ``MediaFireClient`` - it contains enough functions to
+get your uploads/downloads and file listings working. It does not have a stable API,
+and has rudimentary test coverage only.
 
-If you don't mind having breaking changes introduced here and there as the
-high-level API is being shaped, then use ``MediaFireClient``.
+You may want to stick to ``MediaFireApi`` and ``MediaFireUploader`` to have as much
+control as possible over your application flow.
 
 ======================
 mediafire.MediaFireApi
@@ -208,7 +217,6 @@ This is a very thin layer on top of Image and Document conversion API.
         fd.write(response.content)
 
 
-
 ================================
 mediafire.client.MediaFireClient
 ================================
@@ -261,13 +269,6 @@ Requirements
 * requests
 * requests\_toolbelt
 * responses (for testing)
-
-Installing
-----------
-
-.. code-block:: bash
-
-    $ pip install mediafire
 
 Tests
 -----

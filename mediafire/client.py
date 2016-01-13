@@ -58,11 +58,12 @@ class Folder(Resource):
 
 
 class MediaFireClient(object):
-    """Less-user-hostile MediaFire Client"""
+    """A simple MediaFire Client."""
 
     def __init__(self, session_token=None, _api=None):
-        """Initialize MediaFireClient
+        """Initialize MediaFireClient.
 
+        Keyword arguments:
         session_token -- previously acquired session_token dict
         """
 
@@ -77,21 +78,35 @@ class MediaFireClient(object):
             self.api.session = session_token
 
     def login(self, email=None, password=None, app_id=None, api_key=None):
-        """Try to obtain session token"""
+        """Login to MediaFire account.
+
+        Keyword arguments:
+        email -- account email
+        password -- account password
+        app_id -- application ID
+        api_key -- API Key (optional)
+        """
         session_token = self.api.user_get_session_token(
             app_id=app_id, email=email, password=password, api_key=api_key)
-        logger.debug("result: %s", session_token)
 
         # install session token back into api client
         self.api.session = session_token
 
     def get_resource_by_uri(self, uri):
-        """Resolve remote path by mediafire uri
+        """Return resource described by MediaFire URI.
 
-        uri -- One of:
-            mf:(quickkey|folderkey[/path/to/resource]|/path/to/resource)
-            /path/to/resource
-            mf:///path/to/resource
+        uri -- MediaFire URI
+
+        Examples:
+            Folder (using folderkey):
+            mf:r5g3p2z0sqs3j
+            mf:r5g3p2z0sqs3j/folder/file.ext
+
+            File (using quickkey):
+            mf:xkr43dadqa3o2p2
+
+            Path:
+            mf:///Documents/file.ext
         """
 
         location = self._parse_uri(uri)
@@ -115,7 +130,7 @@ class MediaFireClient(object):
         return result
 
     def get_resource_by_key(self, resource_key):
-        """Get file or folder by quick_key/folder_key
+        """Return resource by quick_key/folder_key.
 
         key -- quick_key or folder_key
         """
@@ -149,9 +164,12 @@ class MediaFireClient(object):
         return resource
 
     def get_resource_by_path(self, path, folder_key=None):
-        """Get resource by remote path
+        """Return resource by remote path.
 
         path -- remote path
+
+        Keyword arguments:
+        folder_key -- what to use as the root folder (None for root)
         """
         logger.debug("resolving %s", path)
 
@@ -235,9 +253,14 @@ class MediaFireClient(object):
                     yield resource_info
 
     def get_folder_contents_iter(self, uri):
-        """Get directory listing iterator
+        """Return iterator for directory contents.
 
         uri -- mediafire URI
+
+        Example:
+
+            for item in get_folder_contents_iter('mf:///Documents'):
+                print(item)
         """
         resource = self.get_resource_by_uri(uri)
 
@@ -257,9 +280,12 @@ class MediaFireClient(object):
                 yield Folder(item)
 
     def create_folder(self, uri, recursive=False):
-        """Create folder
+        """Create folder.
 
-        uri -- mediafire URI
+        uri -- MediaFire URI
+
+        Keyword arguments:
+        recursive -- set to True to create intermediate folders.
         """
         logger.info("Creating %s", uri)
 
@@ -301,9 +327,12 @@ class MediaFireClient(object):
         return self.get_resource_by_key(result['folder_key'])
 
     def delete_folder(self, uri, purge=False):
-        """Delete folder
+        """Delete folder.
 
         uri -- MediaFire folder URI
+
+        Keyword arguments:
+        purge -- delete the folder without sending it to Trash
         """
 
         try:
@@ -335,9 +364,12 @@ class MediaFireClient(object):
         return result
 
     def delete_file(self, uri, purge=False):
-        """Delete file
+        """Delete file.
 
         uri -- MediaFire file URI
+
+        Keyword arguments:
+        purge -- delete the file without sending it to Trash.
         """
         try:
             resource = self.get_resource_by_uri(uri)
@@ -356,9 +388,12 @@ class MediaFireClient(object):
         return func(resource['quickkey'])
 
     def delete_resource(self, uri, purge=False):
-        """Remove file or folder
+        """Delete file or folder
 
         uri -- mediafire URI
+
+        Keyword arguments:
+        purge -- delete the resource without sending it to Trash.
         """
         try:
             resource = self.get_resource_by_uri(uri)
@@ -376,7 +411,18 @@ class MediaFireClient(object):
         return result
 
     def upload_session(self):
-        """Returns upload session context manager"""
+        """Returns upload session context manager.
+
+        Use this if you are uploading more than one file at a time.
+        See http://mfi.re/developers/core_api/1.5/user/#get_action_token
+
+        Example:
+
+            with client.upload_session():
+                for path in queue:
+                    client.upload(path, 'mf:///Some/Folder')
+
+        """
         return UploadSession(self.api)
 
     def _prepare_upload_info(self, source, dest_uri):
@@ -426,9 +472,9 @@ class MediaFireClient(object):
         return folder_key, name
 
     def upload_file(self, source, dest_uri):
-        """Upload src_path to dest_uri
+        """Upload file to MediaFire.
 
-        source -- file-like object or path to local file
+        source -- path to the file or a file-like object (e.g. io.BytesIO)
         dest_uri -- MediaFire Resource URI
         """
 
@@ -454,10 +500,10 @@ class MediaFireClient(object):
                 fd.close()
 
     def download_file(self, src_uri, target):
-        """Download file
+        """Download file from MediaFire.
 
-        src_uri -- mediafire file URI to download
-        target -- download location
+        src_uri -- MediaFire file URI to download
+        target -- download path or file-like object in write mode
         """
         resource = self.get_resource_by_uri(src_uri)
         if not isinstance(resource, File):
@@ -511,9 +557,13 @@ class MediaFireClient(object):
     # pylint: disable=too-many-arguments
     def update_file_metadata(self, uri, filename=None, description=None,
                              mtime=None, privacy=None):
-        """Update resource metadata
+        """Update file metadata.
 
         uri -- MediaFire file URI
+
+        Supplying the following keyword arguments would change the
+        metadata on the server side:
+
         filename -- rename file
         description -- set file description string
         mtime -- set file modification time
@@ -536,9 +586,13 @@ class MediaFireClient(object):
     def update_folder_metadata(self, uri, foldername=None, description=None,
                                mtime=None, privacy=None,
                                privacy_recursive=None):
-        """Update resource metadata
+        """Update folder metadata.
 
         uri -- MediaFire file URI
+
+        Supplying the following keyword arguments would change the
+        metadata on the server side:
+
         filename -- rename file
         description -- set file description string
         mtime -- set file modification time
@@ -563,7 +617,7 @@ class MediaFireClient(object):
 
     @staticmethod
     def _parse_uri(uri):
-        """Parse and validate MediaFire URI"""
+        """Parse and validate MediaFire URI."""
 
         tokens = urlparse(uri)
 
