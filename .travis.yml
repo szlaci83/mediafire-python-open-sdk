@@ -5,7 +5,8 @@ python:
 install:
 - pip install -r requirements.txt -I
 - pip install -r test-requirements.txt -I
-script: nosetests
+- pip install . -I
+script: nosetests -P
 env:
   global:
   - secure: eCOGQbvBQ/iCl2a1oyuooMwU710FhFXNLXahEllwZWymWtjvEOD5rF4GPeeLfGl8FSeMW4zBZht4oaVm1s7llU1ThzyBIfZ+Yd7kUMtSArspWjgh72K4Ap48dSqXpRYIVRgpbvz5QpkJYw6Lee8aQ90C4s++413wXzr4feHnXcM=
