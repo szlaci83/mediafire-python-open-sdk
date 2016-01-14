@@ -1,3 +1,8 @@
+2016-01-13 Release 0.5.1
+ * MediaFireClient:
+   * Fix creating folders recursively - #21
+   * Fix URI parsing - #20
+
 2016-01-09 Release 0.5.0
  * ! MediaFireUploader API breaking change: hash_ -> hash_info
  * Calculate unit_size and hash file/units in one go - #3
