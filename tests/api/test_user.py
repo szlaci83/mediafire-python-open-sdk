@@ -31,7 +31,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
         self.api.user_get_session_token(
             email='nobody@example.com', password='secret', app_id='0')
 
-        query = responses.calls[0].request.body
+        query = responses.calls[0].request.body.decode('utf-8')
         params = parse_qs(query)
 
         self.assertEqual(params['signature'][0],
@@ -55,7 +55,7 @@ class TestUserGetSessionToken(MediaFireApiTestCase):
             email='nobody@example.com', password='secret', app_id='0',
             api_key=api_key)
 
-        query = responses.calls[0].request.body
+        query = responses.calls[0].request.body.decode('utf-8')
         params = parse_qs(query)
 
         self.assertEqual(params['signature'][0],

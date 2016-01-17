@@ -49,12 +49,12 @@ class TestV2CallSignature(MediaFireApiTestCase):
         # secret key is (1000000000 * 16807) % 2147483647 = 792978578
         self.api.user_get_info()
 
-        query = responses.calls[0].request.body
+        query = responses.calls[0].request.body.decode('utf-8')
         params = parse_qs(query)
 
         self.assertEqual(params['signature'][0], CALL_SIGNATURES[0])
 
-        query = responses.calls[1].request.body
+        query = responses.calls[1].request.body.decode('utf-8')
         params = parse_qs(query)
 
         self.assertEqual(params['signature'][0], CALL_SIGNATURES[1])
@@ -64,7 +64,7 @@ class TestV2CallSignature(MediaFireApiTestCase):
         """Test that error response from server updates signature"""
 
         def callback(request):
-            params = parse_qs(request.body)
+            params = parse_qs(request.body.decode('utf-8'))
             signature = params['signature'][0]
 
             if signature == CALL_SIGNATURES[0]:
@@ -97,7 +97,7 @@ class TestV2CallSignature(MediaFireApiTestCase):
         # Should be successful
         self.api.user_get_info()
 
-        query = responses.calls[1].request.body
+        query = responses.calls[1].request.body.decode('utf-8')
         params = parse_qs(query)
         self.assertEqual(params['signature'][0], CALL_SIGNATURES[1])
 

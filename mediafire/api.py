@@ -18,6 +18,9 @@ from requests.exceptions import RequestException
 API_BASE = 'https://www.mediafire.com'
 API_VER = '1.3'
 
+UPLOAD_MIMETYPE = 'application/octet-stream'
+FORM_MIMETYPE = 'application/x-www-form-urlencoded'
+
 # Retries on connection errors/timeouts
 API_ERROR_MAX_RETRIES = 5
 
@@ -156,7 +159,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         if upload_info is None:
             # Use request body for query
             data = query
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            headers['Content-Type'] = FORM_MIMETYPE
         else:
             # Use query string for query since payload is file
             uri += '?' + query
@@ -166,18 +169,24 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                     fields={'file': (
                         upload_info["filename"],
                         upload_info["fd"],
-                        'application/octet-stream'
+                        UPLOAD_MIMETYPE
                     )}
                 )
                 headers["Content-Type"] = data.content_type
             else:
                 data = upload_info["fd"]
-                headers["Content-Type"] = 'application/octet-stream'
+                headers["Content-Type"] = UPLOAD_MIMETYPE
 
         logger.debug("uri=%s query=%s",
-                     uri, query if not upload_info else None)
+                     uri, type(query) if not upload_info else None)
 
         try:
+            # bytes from now on
+            url = (API_BASE + uri).encode('utf-8')
+            if isinstance(data, six.text_type):
+                # request's data is bytes, dict, or filehandle
+                data = data.encode('utf-8')
+
             response = self.http.post(API_BASE + uri, data=data,
                                       headers=headers, stream=True)
         except RequestException as ex:

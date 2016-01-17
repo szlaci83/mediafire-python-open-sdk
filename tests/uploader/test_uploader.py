@@ -435,8 +435,11 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
         self.uploader.upload(fd, 'filename.txt',
                              action_on_duplicate='replace')
 
-        body = responses.calls[1].request.body
+        # body will be a binary string, since content-encoding is not set
+        body = responses.calls[1].request.body.decode('utf-8')
+
         params = parse_qs(body)
+
         self.assertEqual(params['action_on_duplicate'][0], 'replace')
 
     @responses.activate
