@@ -178,7 +178,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                 headers["Content-Type"] = UPLOAD_MIMETYPE
 
         logger.debug("uri=%s query=%s",
-                     uri, type(query) if not upload_info else None)
+                     uri, query if not upload_info else None)
 
         try:
             # bytes from now on
