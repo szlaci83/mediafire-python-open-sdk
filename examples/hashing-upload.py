@@ -36,7 +36,6 @@ import os
 import sys
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
 
 from mediafire import (MediaFireApi, MediaFireUploader)
 
@@ -97,7 +96,7 @@ def upload_with_hash_info_json(path, hash_info_json_file):
 
     uploader = MediaFireUploader(api)
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger('mediafire').setLevel(logging.DEBUG)
 
     with open(path, 'rb') as fd:
         result = uploader.upload(
