@@ -67,7 +67,7 @@ class MediaFireSmokeWithDirectoryTest(MediaFireSmokeBaseTestCase.BaseTest):
                                      folder_key=self.folder_key)
 
         self.assertIsNotNone(result.quickkey)
-        self.assertEquals(result.action, 'upload/simple')
+        self.assertEqual(result.action, 'upload/simple')
 
     def test_upload_large(self):
         """Test large file upload"""
@@ -82,7 +82,7 @@ class MediaFireSmokeWithDirectoryTest(MediaFireSmokeBaseTestCase.BaseTest):
                                      folder_key=self.folder_key)
 
         self.assertIsNotNone(result.quickkey)
-        self.assertEquals(result.action, 'upload/resumable')
+        self.assertEqual(result.action, 'upload/resumable')
 
 if __name__ == "__main__":
     unittest.main()
