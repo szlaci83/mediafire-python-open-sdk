@@ -163,40 +163,9 @@ FileDrop
 
 For FileDrop uploads (i.e. when filedrop_key is used) only ``upload/instant``
 result has quickkey. ``upload/instant`` and ``upload/resumable`` return
-``None`` for all the fields, since ``upload/poll`` `does not support`_
+``None`` for all the fields, since ``upload/poll`` does not support
 encrypted upload key.
 
-.. _does not support: http://forum.mediafiredev.com/showthread.php?293-FileDrop-upload-instant-w-o-session-succeeds-and-fails-at-the-same-time&p=478&viewfull=1#post478
-
-MediaFireHashInfo
------------------
-
-MediaFire API requires file hash information to be provided during upload.
-For resumable uploads, the hash needs to be calculated for every upload unit.
-
-If you are uploading a large object, you may want to calculate and store hash
-information, so that you can re-use it if upload fails.
-
-1. Check whether the file size is larger than `mediafire.uploader.UPLOAD_SIMPLE_LIMIT_BYTES`
-
-   * If the file is larger, get the unit_size from `mediafire.uploader.compute_resumable_upload_unit_size()`
-   * If the file is smaller, unit_size is None
-
-2. Get `MediaFireHashInfo` from `mediafire.uploader.compute_hash_info(fd, unit_size)`
-3. Store the received object for future (`hash_info._asdict()` will return a dict-like object)
-4. Receate the hash info structure (e.g. `MediaFireHashInfo(**hash_info_dict)`)
-5. Provide the received object to `MediaFireUploader.upload()` via `hash_info` parameter.
-
-
-MediaFireHashInfo fields:
-
-* **file** - sha256 hexdigest of the whole file
-* **units[]** - list of sha256 hexdigest of the separate file units
-* **size** - size of the file at the time when hash was computed.
-  In case of mismatch, the file has definitely changed
-  and the hash_info structure is no longer valid
-
-See `examples/hashing-upload.py` for a working example.
 
 ======================================
 mediafire.media.ConversionServerClient
@@ -294,10 +263,6 @@ to report issues with the implementation.
 
 .. _MediaFire/mediafire-python-open-sdk: https://github.com/MediaFire/mediafire-python-open-sdk
 
-Note that MediaFire server API is evolving as well, so you may to check
-`MediaFire Developers Forum / REST API section`_ for known API issues.
-
-.. _MediaFire Developers Forum / REST API section: http://forum.mediafiredev.com/forumdisplay.php?8-Using-the-REST-API-with-your-application
 
 =================
 About and License

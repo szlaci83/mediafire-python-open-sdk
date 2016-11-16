@@ -11,8 +11,8 @@ import six
 from six.moves.urllib.parse import urlencode
 
 from requests_toolbelt import MultipartEncoder
-from requests.adapters import HTTPAdapter
 
+from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 
 API_BASE = 'https://www.mediafire.com'
@@ -187,7 +187,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                 # request's data is bytes, dict, or filehandle
                 data = data.encode('utf-8')
 
-            response = self.http.post(API_BASE + uri, data=data,
+            response = self.http.post(url, data=data,
                                       headers=headers, stream=True)
         except RequestException as ex:
             logger.exception("HTTP request failed")
@@ -586,7 +586,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         })
 
         headers = QueryParams({
-            'X-Filesize': file_size,
+            'X-Filesize': str(file_size),
             'X-Filehash': file_hash,
             'X-Filename': filename.encode('utf-8')
         })
@@ -611,11 +611,11 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         action = 'upload/resumable'
 
         headers = {
-            'x-filesize': filesize,
+            'x-filesize': str(filesize),
             'x-filehash': filehash,
             'x-unit-hash': unit_hash,
-            'x-unit-id': unit_id,
-            'x-unit-size': unit_size
+            'x-unit-id': str(unit_id),
+            'x-unit-size': str(unit_size)
         }
 
         params = QueryParams({

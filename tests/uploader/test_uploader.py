@@ -18,7 +18,6 @@ elif six.PY2:
 
 from mediafire.api import (MediaFireApi, API_BASE, API_VER)
 from mediafire.uploader import (MediaFireUploader, UPLOAD_SIMPLE_LIMIT_BYTES,
-                                compute_resumable_upload_unit_size,
                                 compute_hash_info)
 
 
@@ -140,7 +139,10 @@ class MediaFireBasicUploaderTests(MediaFireUploaderTest):
             "response": {
                 "action": "upload/check",
                 "hash_exists": "no",
-                "result": "Success"
+                "result": "Success",
+                "resumable_upload": {
+                    "unit_size": "4194304"
+                }
             }
         }"""
 
@@ -628,38 +630,6 @@ class MediaFireFileDropUploadTests(MediaFireUploaderTest):
         self.assertIsNone(result.quickkey)
 
 
-class ResumableUploadLocalUnitSizeTests(unittest.TestCase):
-    """Tests for local calculation of resumable upload unit_sizes"""
-
-    def test_unit_size(self):
-        MEBIBYTE = 1024 * 1024
-        GIBIBYTE = MEBIBYTE * 1024
-
-        file_size_map = {
-            1:
-                1024 * 1024,
-            4 * MEBIBYTE:
-                1024 * 1024,
-            8 * MEBIBYTE:
-                1024 * 1024,
-            129740800:
-                4096 * 1024,
-            16 * GIBIBYTE:
-                65536 * 1024,
-            65 * GIBIBYTE:
-                65536 * 1024
-        }
-
-        for file_size, expected in file_size_map.items():
-            actual = compute_resumable_upload_unit_size(file_size)
-            self.assertEqual(
-                actual,
-                expected,
-                "unit_size for {} - {}, expected {}".format(
-                    file_size, actual, expected)
-            )
-
-
 class MediaFireUploadHashingTests(unittest.TestCase):
     """Tests for compute_hash_info"""
 
@@ -686,8 +656,7 @@ class MediaFireUploadHashingTests(unittest.TestCase):
         data = b'\0' * DATA_SIZE
         fd = io.BytesIO(data)
 
-        unit_size = compute_resumable_upload_unit_size(DATA_SIZE)
-        self.assertEqual(unit_size, MEBIBYTE)
+        unit_size = MEBIBYTE
 
         result = compute_hash_info(fd, unit_size)
 
@@ -699,7 +668,6 @@ class MediaFireUploadHashingTests(unittest.TestCase):
 
         self.assertNotEqual(result.units, [])
 
-        print(math.ceil(1.0 * DATA_SIZE/unit_size))
         self.assertEqual(
             len(result.units),
             math.ceil(1.0 * DATA_SIZE / unit_size)

@@ -136,31 +136,6 @@ def decode_resumable_upload_bitmap(bitmap_node, number_of_units):
     return result
 
 
-def compute_resumable_upload_unit_size(size):
-    """Calculate resumable upload unit size from file size
-
-    size -- size of the file in bytes
-    """
-
-    size_in_mib = math.floor(size / MEBIBYTE)
-
-    if size_in_mib > 1:
-        # stepping = log_4MiB(size_MiB)
-        threshold_stepping = int(
-            math.floor(math.log(size_in_mib, 4))
-        )
-        # 16 GB (7) is the last threshold stepping
-        if threshold_stepping > 7:
-            threshold_stepping = 7
-    else:
-        threshold_stepping = 1
-
-    # Ux = 1024 * 2^(X-1)
-    # Ux is in kilobytes, so we multiply by 1024 to get bytes
-    unit_size = 1024 * 1024 * 2 ** (threshold_stepping - 1)
-    return unit_size
-
-
 def compute_hash_info(fd, unit_size=None):
     """Get MediaFireHashInfo structure from the fd, unit_size
 
@@ -171,6 +146,8 @@ def compute_hash_info(fd, unit_size=None):
     hi.file -- sha256 of the whole file
     hi.units -- list of sha256 hashes for each unit
     """
+
+    logger.debug("compute_hash_info(%s, unit_size=%s)", fd, unit_size)
 
     fd.seek(0, os.SEEK_END)
     file_size = fd.tell()
@@ -219,14 +196,13 @@ class MediaFireUploader(object):
 
     # pylint: disable=too-many-arguments
     def upload(self, fd, name=None, folder_key=None, filedrop_key=None,
-               path=None, hash_info=None, action_on_duplicate=None):
+               path=None, action_on_duplicate=None):
         """Upload file, returns UploadResult object
 
         fd -- file-like object to upload from, expects exclusive access
         name -- file name
         folder_key -- folderkey of the target folder
         path -- path to file relative to folder_key
-        hash_info -- MediaFireHashInfo for file contents
         filedrop_key -- filedrop to use instead of folder_key
         action_on_duplicate -- skip, keep, replace
         """
@@ -238,15 +214,11 @@ class MediaFireUploader(object):
 
         if size > UPLOAD_SIMPLE_LIMIT_BYTES:
             resumable = True
-            unit_size = compute_resumable_upload_unit_size(size)
         else:
             resumable = False
-            unit_size = None
 
-        # Allow supplying stored HashInfo
-        if hash_info is None:
-            logger.debug("Calculating checksum")
-            hash_info = compute_hash_info(fd, unit_size)
+        logger.debug("Calculating checksum")
+        hash_info = compute_hash_info(fd)
 
         if hash_info.size != size:
             # Has the file changed beween computing the hash
@@ -286,6 +258,9 @@ class MediaFireUploader(object):
 
         if not upload_func:
             if resumable:
+                resumable_upload_info = check_result['resumable_upload']
+                upload_info.hash_info = compute_hash_info(
+                    fd, int(resumable_upload_info['unit_size']))
                 upload_func = self._upload_resumable
             else:
                 upload_func = self._upload_simple
@@ -537,9 +512,9 @@ class MediaFireUploader(object):
         number_of_units = int(resumable_upload['number_of_units'])
 
         # make sure we have calculated the right thing
+        logger.debug("number_of_units=%s (expected %s)",
+                     number_of_units, len(upload_info.hash_info.units))
         assert len(upload_info.hash_info.units) == number_of_units
-        assert(unit_size ==
-               compute_resumable_upload_unit_size(upload_info.size))
 
         logger.debug("Preparing %d units * %d bytes",
                      number_of_units, unit_size)

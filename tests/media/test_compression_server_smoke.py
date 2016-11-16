@@ -30,7 +30,7 @@ class ConversionServerClientSmokeTest(unittest.TestCase):
         """Test that image resize works"""
         result = self.conv.request(IMAGE_HASH, IMAGE_QUICKKEY,
                                    'i', size_id='1')
-        self.assertEquals(result.headers['content-type'], 'image/jpeg')
+        self.assertEqual(result.headers['content-type'], 'image/jpeg')
 
     def test_image_nosize_error(self):
         """Test that supplying no size causes error"""
