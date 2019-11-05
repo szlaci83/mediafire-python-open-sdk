@@ -1,9 +1,7 @@
 from setuptools import setup
 from pip.req import parse_requirements
-import uuid
 
-requirements = parse_requirements('requirements.txt')
-install_requires = [str(r.req) for r in requirements]
+install_requires = parse_requirements('requirements.txt')
 
 setup(
     name='mediafire',
