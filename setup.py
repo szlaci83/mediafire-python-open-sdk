@@ -2,7 +2,7 @@ from setuptools import setup
 from pip.req import parse_requirements
 import uuid
 
-requirements = parse_requirements('requirements.txt', session=uuid.uuid1())
+requirements = parse_requirements('requirements.txt')
 install_requires = [str(r.req) for r in requirements]
 
 setup(
