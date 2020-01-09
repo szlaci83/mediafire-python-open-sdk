@@ -312,21 +312,15 @@ class MediaFireUploader(object):
         while quick_key is None:
             poll_result = self._api.upload_poll(upload_key)
             doupload = poll_result['doupload']
-            logger.info(poll_result)
-#            logger.debug("poll(%s): status=%d, description=%s, filename=%s,"
-#                         " result=%d",
-#                         upload_key, int(doupload['status']),
-#                         doupload['description'], doupload['filename'],
-#                         int(doupload['result']))
+            logger.debug("poll : (%s)" % poll_result)
 
             if int(doupload['result']) != 0:
                 break
 
-            # if doupload['fileerror'] != '':
-            #     # TODO: we may have to handle this a bit more dramatically
-            #     logger.warning("poll(%s): fileerror=%d", upload_key,
-            #                    int(doupload['fileerror']))
-            #     break
+            if doupload['fileerror'] != '':
+                # TODO: we may have to handle this a bit more dramatically
+                logger.warning("poll : (%s)" % poll_result)
+                break
 
             if int(doupload['status']) == STATUS_NO_MORE_REQUESTS:
                 quick_key = doupload['quickkey']

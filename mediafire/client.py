@@ -63,7 +63,7 @@ class MediaFireClient(object):
     def __init__(self, session_token=None, _api=None):
         """Initialize MediaFireClient.
 
-        Keyword arguments:F
+        Keyword arguments:
         session_token -- previously acquired session_token dict
         """
 
@@ -280,7 +280,6 @@ class MediaFireClient(object):
                 yield Folder(item)
 
     def create_folder(self, uri, recursive=False):
-        print(uri)
         """Create folder.
 
         uri -- MediaFire URI
@@ -317,17 +316,12 @@ class MediaFireClient(object):
                 parent_key = result if type(result) == str else result.get('folderkey', result.get('folder_key'))
             else:
                 raise
-
         # We specify exact location, so don't allow duplicates
         result = self.api.folder_create(
             folder_name, parent_key=parent_key, action_on_duplicate='skip')
 
-        # logger.info("Created folder '%s' [mf:%s]",
-        #             result['name'], result['folder_key'])
-        #return result.get('folderkey', result.get('folder_key'))
         res = self.get_resource_by_uri(parent_uri + "/" + folder_name )
         return  res.get('folderkey', res.get('folder_key'))
-        #return result.get('folderkey', {"folderkey" : self.get_resource_by_uri(parent_uri + "/" + folder_name )['folderkey']})
 
     def delete_folder(self, uri, purge=False):
         """Delete folder.
