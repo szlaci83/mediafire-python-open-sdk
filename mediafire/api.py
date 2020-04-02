@@ -633,9 +633,13 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             "fd": fd,
             "filename": "chunk"
         }
-
-        return self.request(action, params, action_token_type="upload",
-                            upload_info=upload_info, headers=headers)
+        try:
+            res = self.request(action, params, action_token_type="upload",
+                         upload_info=upload_info, headers=headers)
+        except Exception as e:
+            logging.error(e.message)
+            return None
+        return res
     # pylint: enable=too-many-locals
 
     def upload_instant(self, filename, size, hash_, quick_key=None,

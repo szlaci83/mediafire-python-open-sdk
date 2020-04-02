@@ -437,17 +437,20 @@ class MediaFireUploader(object):
         if uu_info.hash_ is None:
             raise ValueError('UploadUnitInfo.hash_ is now required')
 
-        return self._api.upload_resumable(
-            uu_info.fd,
-            uu_info.upload_info.size,
-            uu_info.upload_info.hash_info.file,
-            uu_info.hash_,
-            uu_info.uid,
-            unit_size,
-            filedrop_key=uu_info.upload_info.filedrop_key,
-            folder_key=uu_info.upload_info.folder_key,
-            path=uu_info.upload_info.path,
-            action_on_duplicate=uu_info.upload_info.action_on_duplicate)
+        res = None
+        while not res:
+            res = self._api.upload_resumable(
+                uu_info.fd,
+                uu_info.upload_info.size,
+                uu_info.upload_info.hash_info.file,
+                uu_info.hash_,
+                uu_info.uid,
+                unit_size,
+                filedrop_key=uu_info.upload_info.filedrop_key,
+                folder_key=uu_info.upload_info.folder_key,
+                path=uu_info.upload_info.path,
+                action_on_duplicate=uu_info.upload_info.action_on_duplicate)
+        return res
 
     def _upload_resumable_all(self, upload_info, bitmap,
                               number_of_units, unit_size):
