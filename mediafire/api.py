@@ -638,6 +638,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                          upload_info=upload_info, headers=headers)
         except Exception as e:
             logging.error(e.message)
+            self.user_renew_session_token()
             return None
         return res
     # pylint: enable=too-many-locals
