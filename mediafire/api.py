@@ -16,7 +16,7 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 
 API_BASE = 'https://www.mediafire.com'
-API_VER = '1.3'
+API_VER = '1.5'
 
 UPLOAD_MIMETYPE = 'application/octet-stream'
 FORM_MIMETYPE = 'application/x-www-form-urlencoded'
