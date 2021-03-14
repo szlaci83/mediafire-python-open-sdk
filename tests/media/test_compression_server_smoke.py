@@ -26,17 +26,6 @@ class ConversionServerClientSmokeTest(unittest.TestCase):
         with self.assertRaises(Exception):
             self.conv.request(IMAGE_HASH, IMAGE_QUICKKEY, None)
 
-    def test_image_resize(self):
-        """Test that image resize works"""
-        result = self.conv.request(IMAGE_HASH, IMAGE_QUICKKEY,
-                                   'i', size_id='1')
-        self.assertEqual(result.headers['content-type'], 'image/jpeg')
-
-    def test_image_nosize_error(self):
-        """Test that supplying no size causes error"""
-        with self.assertRaises(ConversionServerError):
-            self.conv.request(IMAGE_HASH, IMAGE_QUICKKEY, 'i')
-
     # No document tests since the API seems to be broken ATM
 
 

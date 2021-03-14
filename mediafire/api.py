@@ -16,7 +16,7 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 
 API_BASE = 'https://www.mediafire.com'
-API_VER = '1.3'
+API_VER = '1.5'
 
 UPLOAD_MIMETYPE = 'application/octet-stream'
 FORM_MIMETYPE = 'application/x-www-form-urlencoded'
@@ -240,7 +240,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def _regenerate_secret_key(self):
         """Regenerate secret key
 
-        http://www.mediafire.com/developers/core_api/1.3/getting_started/#call_signature
+        https://www.mediafire.com/developers/core_api/1.5/getting_started/#call_signature
         """
         # Don't regenerate the key if we have none
         if self._session and 'secret_key' in self._session:
@@ -300,7 +300,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def user_fetch_tos(self):
         """user/fetch_tos
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#fetch_tos
+        https://www.mediafire.com/developers/core_api/1.5/user/#fetch_tos
         """
 
         return self.request("user/fetch_tos")
@@ -308,7 +308,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def user_accept_tos(self, acceptance_token):
         """user/accept_tos
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#user_top
+        https://www.mediafire.com/developers/core_api/1.5/user/#user_top
         """
 
         return self.request("user/accept_tos", QueryParams({
@@ -321,7 +321,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                                tw_oauth_token_secret=None, api_key=None):
         """user/get_session_token
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_session_token
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_session_token
         """
 
         if app_id is None:
@@ -376,14 +376,14 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def user_renew_session_token(self):
         """user/renew_session_token:
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#renew_session_token
+        https://www.mediafire.com/developers/core_api/1.5/user/#renew_session_token
         """
         return self.request('user/renew_session_token')
 
     def user_get_action_token(self, type_=None, lifespan=None):
         """user/get_action_token
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_action_token
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_action_token
         """
         return self.request('user/get_action_token', QueryParams({
             'type': type_,
@@ -393,7 +393,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def user_destroy_action_token(self, action_token=None):
         """user/destroy_action_token
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#destroy_action_token
+        https://www.mediafire.com/developers/core_api/1.5/user/#destroy_action_token
         """
         return self.request('user/destroy_action_token', QueryParams({
             'action_token': action_token
@@ -402,35 +402,35 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def user_get_avatar(self):
         """user/get_avatar
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_avatar
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_avatar
         """
         return self.request("user/get_avatar")
 
     def user_get_info(self):
         """user/get_info
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_info
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_info
         """
         return self.request("user/get_info")
 
     def user_get_limits(self):
         """user/get_limits
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_limits
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_limits
         """
         return self.request("user/get_limits")
 
     def user_get_settings(self):
         """user/get_settings
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#get_settings
+        https://www.mediafire.com/developers/core_api/1.5/user/#get_settings
         """
         return self.request("user/get_settings")
 
     def user_set_avatar(self, action=None, quick_key=None, url=None):
         """user/set_avatar
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#set_avatar
+        https://www.mediafire.com/developers/core_api/1.5/user/#set_avatar
         """
         return self.request("user/set_avatar", QueryParams({
             "action": action,
@@ -446,7 +446,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
         """
         user/update
 
-        http://www.mediafire.com/developers/core_api/1.3/user/#update
+        https://www.mediafire.com/developers/core_api/1.5/user/#update
         """
         return self.request("user/update", QueryParams({
             "display_name": display_name,
@@ -465,24 +465,31 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             "timezone": timezone
         }))
 
-    def folder_get_info(self, folder_key=None, device_id=None, details=None):
+    def folder_get_info(self, folder_key=None, folder_path=None, device_id=None, details=None):
         """folder/get_info
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#get_info
+        https://www.mediafire.com/developers/core_api/1.5/folder/#get_info
         """
-        return self.request('folder/get_info', QueryParams({
-            'folder_key': folder_key,
-            'device_id': device_id,
-            'details': details
-        }))
+        if folder_key:
+            return self.request('folder/get_info', QueryParams({
+                'folder_key': folder_key,
+                'device_id': device_id,
+                'details': details
+            }))
+        else:
+            return self.request('folder/get_info', QueryParams({
+                'folder_path': folder_path,
+                'device_id': device_id,
+                'details': details
+            }))
 
     def folder_get_content(self, folder_key=None, content_type=None,
                            filter_=None, device_id=None, order_by=None,
                            order_direction=None, chunk=None, details=None,
-                           chunk_size=None):
+                           chunk_size=1000):
         """folder/get_content
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#get_content
+        https://www.mediafire.com/developers/core_api/1.5/folder/#get_content
         """
         return self.request('folder/get_content', QueryParams({
             'folder_key': folder_key,
@@ -500,7 +507,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                       privacy=None, privacy_recursive=None, mtime=None):
         """folder/update
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#update
+        https://www.mediafire.com/developers/core_api/1.5/folder/#update
         """
         return self.request('folder/update', QueryParams({
             'folder_key': folder_key,
@@ -515,7 +522,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                       action_on_duplicate=None, mtime=None):
         """folder/create
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#create
+        https://www.mediafire.com/developers/core_api/1.5/folder/#create
         """
         return self.request('folder/create', QueryParams({
             'foldername': foldername,
@@ -524,28 +531,38 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             'mtime': mtime
         }))
 
-    def folder_delete(self, folder_key):
+    def folder_delete(self, folder_key=None, folder_path=None):
         """folder/delete
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#delete
+        https://www.mediafire.com/developers/core_api/1.5/folder/#delete
         """
-        return self.request('folder/delete', QueryParams({
-            'folder_key': folder_key
-        }))
+        if folder_key:
+            return self.request('folder/delete', QueryParams({
+                'folder_key': folder_key
+            }))
+        else:
+            return self.request('folder/delete', QueryParams({
+                'folder_path': folder_path
+            }))
 
-    def folder_purge(self, folder_key):
+    def folder_purge(self, folder_key=None, folder_path=None):
         """folder/purge
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#purge
+        https://www.mediafire.com/developers/core_api/1.5/folder/#purge
         """
-        return self.request('folder/purge', QueryParams({
-            'folder_key': folder_key
-        }))
+        if folder_key:
+            return self.request('folder/purge', QueryParams({
+                'folder_key': folder_key
+            }))
+        else:
+            return self.request('folder/purge', QueryParams({
+                'folder_path': folder_path
+            }))
 
     def folder_move(self, folder_key_src, folder_key_dst=None):
         """folder/move
 
-        http://www.mediafire.com/developers/core_api/1.3/folder/#move
+        https://www.mediafire.com/developers/core_api/1.5/folder/#move
         """
         return self.request('folder/move', QueryParams({
             'folder_key_src': folder_key_src,
@@ -556,7 +573,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                      size=None, hash_=None, path=None, resumable=None):
         """upload/check
 
-        http://www.mediafire.com/developers/core_api/1.3/upload/#check
+        https://www.mediafire.com/developers/core_api/1.5/upload/#check
         """
         return self.request('upload/check', QueryParams({
             'filename': filename,
@@ -573,7 +590,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                       mtime=None, file_size=None, file_hash=None):
         """upload/simple
 
-        http://www.mediafire.com/developers/core_api/1.3/upload/#simple
+        https://www.mediafire.com/developers/core_api/1.5/upload/#simple
         """
         action = 'upload/simple'
 
@@ -606,7 +623,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                          filedrop_key=None, path=None, previous_hash=None):
         """upload/resumable
 
-        http://www.mediafire.com/developers/core_api/1.3/upload/#resumable
+        https://www.mediafire.com/developers/core_api/1.5/upload/#resumable
         """
         action = 'upload/resumable'
 
@@ -644,7 +661,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                        version_control=None, previous_hash=None):
         """upload/instant
 
-        http://www.mediafire.com/developers/core_api/1.3/upload/#instant
+        https://www.mediafire.com/developers/core_api/1.5/upload/#instant
         """
         return self.request('upload/instant', QueryParams({
             'filename': filename,
@@ -663,25 +680,30 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def upload_poll(self, key):
         """upload/poll
 
-        http://www.mediafire.com/developers/core_api/1.3/upload/#poll_upload
+        https://www.mediafire.com/developers/core_api/1.5/upload/#poll_upload
         """
         return self.request('upload/poll_upload', QueryParams({
             'key': key
         }))
 
-    def file_get_info(self, quick_key=None):
+    def file_get_info(self, quick_key=None, file_path=None):
         """file/get_info
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#get_info
+        https://www.mediafire.com/developers/core_api/1.5/file/#get_info
         """
-        return self.request('file/get_info', QueryParams({
-            'quick_key': quick_key
-        }))
+        if quick_key:
+            return self.request('file/get_info', QueryParams({
+                'quick_key': quick_key
+            }))
+        else:
+                return self.request('file/get_info', QueryParams({
+                'file_path': file_path
+            }))
 
     def file_get_links(self, quick_key, link_type=None):
         """file/get_links
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#get_links
+        https://www.mediafire.com/developers/core_api/1.5/file/#get_links
         """
         return self.request('file/get_links', QueryParams({
             'quick_key': quick_key,
@@ -692,7 +714,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                     mtime=None, privacy=None):
         """file/update
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#update
+        https://www.mediafire.com/developers/core_api/1.5/file/#update
         """
         return self.request('file/update', QueryParams({
             'quick_key': quick_key,
@@ -707,7 +729,7 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
                          timezone=None):
         """file/update_file
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#update_file
+        https://www.mediafire.com/developers/core_api/1.5/file/#update_file
         """
         return self.request('file/update', QueryParams({
             'quick_key': quick_key,
@@ -719,38 +741,38 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
             'timezone': timezone
         }))
 
-    def file_delete(self, quick_key):
+    def file_delete(self, file_path):
         """file/delete
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#delete
+        https://www.mediafire.com/developers/core_api/1.5/file/#delete
         """
         return self.request('file/delete', QueryParams({
-            'quick_key': quick_key
+            'file_path': file_path
         }))
 
     def file_move(self, quick_key, folder_key=None):
         """file/move
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#move
+        https://www.mediafire.com/developers/core_api/1.5/file/#move
         """
         return self.request('file/move', QueryParams({
             'quick_key': quick_key,
             'folder_key': folder_key
         }))
 
-    def file_purge(self, quick_key):
+    def file_purge(self, file_path):
         """file/purge
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#purge
+        https://www.mediafire.com/developers/core_api/1.5/file/#purge
         """
         return self.request('file/purge', QueryParams({
-            'quick_key': quick_key
+            'file_path': file_path
         }))
 
     def file_zip(self, keys, confirm_download=None, meta_only=None):
         """file/zip
 
-        http://www.mediafire.com/developers/core_api/1.3/file/#zip
+        https://www.mediafire.com/developers/core_api/1.5/file/#zip
         """
         return self.request('file/zip', QueryParams({
             'keys': keys,
@@ -761,13 +783,13 @@ class MediaFireApi(object):  # pylint: disable=too-many-public-methods
     def system_get_info(self):
         """system/get_info
 
-        http://www.mediafire.com/developers/core_api/1.3/system/#get_info
+        https://www.mediafire.com/developers/core_api/1.5/system/#get_info
         """
         return self.request('system/get_info')
 
     def system_get_status(self):
         """system/get_status
 
-        http://www.mediafire.com/developers/core_api/1.3/system/#get_status
+        https://www.mediafire.com/developers/core_api/1.5/system/#get_status
         """
         return self.request('system/get_status')
