@@ -163,10 +163,12 @@ class MediaFireClient(object):
 
         return resource
 
-    def get_resource_by_path(self, path, folder_key=None):
-        """Return resource by remote path.
+    def get_resource_by_path(self, path=None, key=None, folder_key=None):
+        """Return resource by remote path or quick_key/folder_key
 
         path -- remote path
+         or
+        key  -- quick_key/folder_key
 
         Keyword arguments:
         folder_key -- what to use as the root folder (None for root)
@@ -183,44 +185,32 @@ class MediaFireClient(object):
                 self.api.folder_get_info(folder_key)['folder_info']
             )
 
-        resource = None
+        resource_info = None
 
-        for component in components:
-            exists = False
-            for item in self._folder_get_content_iter(folder_key):
-                name = item['name'] if 'name' in item else item['filename']
+        if path:
+            try:
+                resource_info = self.api.file_get_info(file_path=path)
+            except MediaFireApiError:
+                try:
+                    resource_info = self.api.folder_get_info(folder_path=path)
+                except:
+                    pass
+        else:
+            try:
+                resource_info = self.api.file_get_info(quick_key=key)
+            except MediaFireApiError:
+                try:
+                    resource_info = self.api.folder_get_info(folder_key=key)
+                except:
+                    pass
 
-                if name == component:
-                    exists = True
-                    if components[-1] != component:
-                        # still have components to go through
-                        if 'filename' in item:
-                            # found a file, expected a directory
-                            raise NotAFolderError(item['filename'])
-                        folder_key = item['folderkey']
-                    else:
-                        # found the leaf
-                        resource = item
-                    break
-
-                if resource is not None:
-                    break
-
-            if not exists:
-                # intermediate component does not exist - bailing out
-                break
-
-        if resource is None:
+        if resource_info is None:
             raise ResourceNotFoundError(path)
 
-        if "quickkey" in resource:
-            file_info = self.api.file_get_info(
-                resource['quickkey'])['file_info']
-            result = File(file_info)
-        elif "folderkey" in resource:
-            folder_info = self.api.folder_get_info(
-                resource['folderkey'])['folder_info']
-            result = Folder(folder_info)
+        if 'file_info' in resource_info:
+            result = File(resource_info['file_info'])
+        else:
+            result = Folder(resource_info['folder_info'])
 
         return result
 
@@ -323,88 +313,58 @@ class MediaFireClient(object):
         res = self.get_resource_by_uri(parent_uri + "/" + folder_name )
         return  res.get('folderkey', res.get('folder_key'))
 
-    def delete_folder(self, uri, purge=False):
+    def delete_folder(self, folder_path, purge=False):
         """Delete folder.
 
-        uri -- MediaFire folder URI
+        folder_path -- absolute path to a single MediaFire folder
 
         Keyword arguments:
         purge -- delete the folder without sending it to Trash
         """
-
-        try:
-            resource = self.get_resource_by_uri(uri)
-        except ResourceNotFoundError:
-            # Nothing to remove
-            return None
-
-        if not isinstance(resource, Folder):
-            raise ValueError("Folder expected, got {}".format(type(resource)))
 
         if purge:
             func = self.api.folder_purge
         else:
             func = self.api.folder_delete
 
-        try:
-            result = func(resource['folderkey'])
-        except MediaFireApiError as err:
-            if err.code == 100:
-                logger.debug(
-                    "Delete folder returns error 900 but folder is deleted: "
-                    "http://forum.mediafiredev.com/showthread.php?129")
+        return func(folder_path)
 
-                result = {}
-            else:
-                raise
 
-        return result
-
-    def delete_file(self, uri, purge=False):
+    def delete_file(self, file_path, purge=False):
         """Delete file.
 
-        uri -- MediaFire file URI
+        file_path -- absolute path to a MediaFire file
 
         Keyword arguments:
         purge -- delete the file without sending it to Trash.
         """
-        try:
-            resource = self.get_resource_by_uri(uri)
-        except ResourceNotFoundError:
-            # Nothing to remove
-            return None
-
-        if not isinstance(resource, File):
-            raise ValueError("File expected, got {}".format(type(resource)))
-
         if purge:
             func = self.api.file_purge
         else:
             func = self.api.file_delete
 
-        return func(resource['quickkey'])
+        return func(file_path)
 
-    def delete_resource(self, uri, purge=False):
+    def delete_resource(self, path, purge=False):
         """Delete file or folder
 
-        uri -- mediafire URI
+        path -- path to MediaFire file or directory
 
         Keyword arguments:
         purge -- delete the resource without sending it to Trash.
         """
         try:
-            resource = self.get_resource_by_uri(uri)
-        except ResourceNotFoundError:
-            # Nothing to remove
-            return None
+            self.api.file_get_info(path)
+            func = self.delete_file
+        except MediaFireApiError:
+            try:
+                self.api.folder_get_info(path)
+                func = self.delete_folder
+            except MediaFireApiError:
+                # Nothing to remove
+                return None
 
-        if isinstance(resource, File):
-            result = self.delete_file(uri, purge)
-        elif isinstance(resource, Folder):
-            result = self.delete_folder(uri, purge)
-        else:
-            raise ValueError('Unsupported resource: {}'.format(type(resource)))
-
+        result = func(path, purge)
         return result
 
     def upload_session(self):

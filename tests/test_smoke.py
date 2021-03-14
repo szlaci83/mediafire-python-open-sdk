@@ -12,6 +12,7 @@ APP_ID = '42511'
 
 MEDIAFIRE_EMAIL = os.environ.get('MEDIAFIRE_EMAIL')
 MEDIAFIRE_PASSWORD = os.environ.get('MEDIAFIRE_PASSWORD')
+MEDIAFIRE_USERNAME = os.environ.get('MEDIAFIRE_USERNAME')
 
 
 class MediaFireSmokeBaseTestCase(object):
@@ -37,7 +38,7 @@ class MediaFireSmokeSimpleTest(MediaFireSmokeBaseTestCase.BaseTest):
     def test_user_get_info(self):
         result = self.api.user_get_info()
         self.assertEqual(result["user_info"]["display_name"],
-                         u"Coalmine Smoketest")
+                         MEDIAFIRE_USERNAME)
 
 
 @unittest.skipIf('CI' not in os.environ, "Running outside CI environment")
@@ -52,7 +53,7 @@ class MediaFireSmokeWithDirectoryTest(MediaFireSmokeBaseTestCase.BaseTest):
         self.folder_key = result["folder_key"]
 
     def tearDown(self):
-        self.api.folder_purge(self.folder_key)
+        self.api.folder_delete(folder_key=self.folder_key)
 
     def test_upload_small(self):
         """Test simple upload"""

@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import unittest
 
 from mediafire.client import (MediaFireClient, ResourceNotFoundError,
-                              NotAFolderError)
+                              NotAFolderError, MediaFireApiError)
 
 
 class DummyMediaFireApi(object):
@@ -77,43 +77,74 @@ class DummyMediaFireApi(object):
 
         return mock_responses[folder_key][content_type]
 
-    def folder_get_info(self, folder_key=None):
-        """folder/get_info"""
-        mock_responses = {
-            None: {
-                "folder_info": {
-                    "folderkey": "blah"
-                }
-            },
-            "a" * 13: {
-                "folder_info": {
-                    "folderkey": "a" * 13,
-                    "name": "a"
-                }
-            },
-            "b" * 13: {
-                "folder_info": {
-                    "folderkey": "b" * 13,
-                    "name": "b"
-                }
-            }
-        }
-
-        return mock_responses[folder_key]
-
-    def file_get_info(self, quick_key):
+    def folder_get_info(self, folder_key=None, folder_path=None):
         """folder/get_info"""
 
-        mock_responses = {
-            "i" * 15: {
-                "file_info": {
-                    "quickkey": "i" * 15,
-                    "name": "hi.txt"
+        if folder_key:
+            mock_responses = {
+                None: {
+                    "folder_info": {
+                        "folderkey": "blah"
+                    }
+                },
+                "a" * 13: {
+                    "folder_info": {
+                        "folderkey": "a" * 13,
+                        "name": "a"
+                    }
+                },
+                "b" * 13: {
+                    "folder_info": {
+                        "folderkey": "b" * 13,
+                        "name": "b"
+                    }
                 }
             }
-        }
 
-        return mock_responses[quick_key]
+            return mock_responses[folder_key]
+        else:
+            mock_responses = {
+                None: {
+                    "folder_info": {
+                        "folderkey": "blah"
+                    }
+                },
+                "/a/b": {
+                    "folder_info": {
+                        "folderkey": "b" * 13,
+                        "name": "b"
+                    }
+                }
+            }
+
+            return mock_responses[folder_path]
+
+    def file_get_info(self, quick_key=None, file_path=None):
+        """file/get_info"""
+
+        if quick_key:
+            mock_responses = {
+                "i" * 15: {
+                    "file_info": {
+                        "quickkey": "i" * 15,
+                        "name": "hi.txt"
+                    }
+                }
+            }
+            return mock_responses.get(quick_key)
+        else:
+            mock_responses = {
+                "/a/b/hi.txt": {
+                    "file_info": {
+                        "quickkey": "i" * 15,
+                        "name": "hi.txt"
+                    }
+                }
+            }
+            if file_path in mock_responses:
+                return mock_responses.get(file_path)
+            else:
+                raise MediaFireApiError('No such file: %s (could be a directory)' % file_path)
 
 
 class MediaFireResourceLookupTests(unittest.TestCase):
@@ -132,11 +163,6 @@ class MediaFireResourceLookupTests(unittest.TestCase):
         """Test that multilevel folder is resolved"""
         result = self.client.get_resource_by_uri('mf:///a/b')
         self.assertEqual(result["folderkey"], "b" * 13)
-
-    def test_intermediate_file_raises_error(self):
-        """Test that a file in the middle throws NotAFolderError"""
-        with self.assertRaises(NotAFolderError):
-            self.client.get_resource_by_uri('mf:///hi.txt/b')
 
     def test_file_by_uri(self):
         """Test that multilevel file is resolved"""

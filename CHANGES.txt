@@ -1,3 +1,12 @@
+2021-03-11 Release 0.7.0
+ * API: Update API_VER to 1.5 - #14
+ * improve performance for folders containing many entries by adding an option
+   to pass folder/file path instead of quick_key/folder_key (which needs to be
+   resolved first)
+ * remove broken tests (image resize service returns 404)
+ * obtian mediafire username from MEDIAFIRE_USERNAME env. variable
+ * update comments
+
 2016-11-15 Release 0.6.0
  * ! MediaFireUploader API breaking change: upload() no longer
    accepts hash_info argument - #30.
